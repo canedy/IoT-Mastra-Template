@@ -104,31 +104,41 @@ AUTO_INIT=false                  # Auto-connect on startup
 
 ## ✨ Key Features
 
-### Dynamic Health Scoring
+### 🎯 Dynamic Health Scoring
 The template calculates real-time health scores based on:
 - Connection status and stability
-- Active device count and activity
+- Active device count and activity  
 - Data quality and anomalies
 - Message processing errors
 - System resource utilization
 
-### Intelligent Message Filtering
-- Filter messages by any JSON field
-- Debug mode shows filtered messages
+### 📊 Automated Reporting & Analytics
+- Executive summaries for stakeholders
+- Technical analysis reports for engineers
+- Compliance audit documentation
+- Performance metrics with trends
+- Fun facts and insights with personality
+
+### 📈 Performance Evaluation Framework
+- Health score accuracy evaluation
+- Anomaly detection performance metrics
+- Confusion matrix analysis with precision/recall
+- Benchmark comparison and improvement recommendations
+- System performance trending
+
+### 🤖 AI Agent with Personality (IOTOR)
+- Enthusiastic IoT coordinator with humor
+- IoT puns and friendly error messages
+- Technical expertise with approachable communication
+- Comprehensive tool integration
+- Memory-enabled conversations
+
+### 🔧 Intelligent MQTT Management
+- Filter messages by any JSON field with debug logging
 - Support for wildcards (+, #) in topics
 - Pause/resume subscriptions without disconnecting
-
-### Non-blocking Scheduled Tasks
-- Prevents node-cron execution warnings
-- Concurrent task prevention
-- Graceful error handling
-- Configurable intervals via environment
-
-### Production-Ready Error Handling
-- Automatic reconnection with exponential backoff
-- Message queuing during disconnections
-- Comprehensive error logging
-- Graceful degradation
+- Non-blocking scheduled tasks preventing cron warnings
+- Production-ready error handling with automatic reconnection
 
 ## Core Components
 
@@ -153,6 +163,20 @@ The template calculates real-time health scores based on:
    - Topic validation
    - Batch publishing capabilities
 
+4. **IoT Report Generator** (`iot-report-generator`)
+   - Automated executive summaries and technical reports
+   - Anomaly detection reports with recommendations
+   - Compliance audit documentation
+   - Performance metrics analysis
+   - Export formats: Markdown, JSON, HTML, PDF-ready
+
+5. **IoT Evaluation Framework** (`iot-evaluation`)
+   - Health score accuracy evaluation
+   - Anomaly detection performance metrics
+   - Confusion matrix analysis
+   - Precision, recall, and F1 score calculations
+   - Benchmark comparison and improvement recommendations
+
 ### Workflows
 
 1. **IoT Monitoring Workflow** (`iotMonitoringWorkflow`)
@@ -164,10 +188,12 @@ The template calculates real-time health scores based on:
 
 ### Agent
 
-**IoT Coordinator Agent** (`iot-coordinator`)
-- AI-powered assistant for IoT management
-- Helps with configuration and troubleshooting
-- Provides insights and recommendations
+**IOTOR - Your Friendly IoT Coordinator** (`iotCoordinatorAgent`)
+- AI-powered assistant with personality and humor 🤖
+- Expert in MQTT protocols and IoT troubleshooting
+- Generates automated reports with insights and fun facts
+- Evaluates system performance against benchmarks  
+- Provides recommendations with enthusiasm and IoT puns
 
 ## Usage Examples
 
@@ -281,24 +307,36 @@ const subs = await mastra.getTool('mqtt-subscribe').execute({
 console.log(subs.details.subscriptions);
 ```
 
-### Health Monitoring
+### Health Monitoring & Reporting
 ```javascript
-// Check system health with AI agent
+// Check system health with IOTOR (your friendly AI agent)
 const agent = mastra.getAgent('iotCoordinatorAgent');
 const health = await agent.generate([{
   role: 'user',
   content: 'Check MQTT connection status and analyze system health'
 }]);
 
-// Run scheduled monitoring workflow
-const workflow = mastra.getWorkflow('iotMonitoringWorkflow');
-const result = await workflow.execute({
-  check_type: 'connectivity_check',
-  filters: {
-    devices: ['sensor1', 'sensor2'],
-    severity: 'high'
+// Generate executive report
+const report = await mastra.getTool('iot-report-generator').execute({
+  context: {
+    report_type: 'executive_summary',
+    time_range: { preset: 'last_24h' },
+    format: 'markdown'
   }
 });
+
+// Evaluate monitoring accuracy
+const evaluation = await mastra.getTool('iot-evaluation').execute({
+  context: {
+    evaluation_type: 'full_system_evaluation',
+    benchmark_thresholds: {
+      min_accuracy: 90,
+      min_precision: 95
+    }
+  }
+});
+
+console.log(`System accuracy: ${evaluation.overall_accuracy}%`);
 ```
 
 ## Supported MQTT Brokers
@@ -324,11 +362,13 @@ src/mastra/
 ├── tools/                      
 │   ├── mqtt-connection.ts      # MQTT broker connection management
 │   ├── mqtt-subscribe.ts       # Topic subscription with filtering
-│   └── mqtt-publish.ts         # Message publishing with QoS
+│   ├── mqtt-publish.ts         # Message publishing with QoS
+│   ├── iot-report-generator.ts # Automated IoT reporting system
+│   └── iot-evaluation.ts       # Performance evaluation framework
 ├── workflows/              
 │   └── scheduled-monitoring.ts # IoT monitoring workflow with scheduling
 └── agents/                 
-    └── iot-coordinator.ts      # AI-powered IoT system coordinator
+    └── iot-coordinator.ts      # IOTOR - Friendly AI coordinator with personality
 ```
 
 ### Running Tests
