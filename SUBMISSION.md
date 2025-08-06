@@ -16,10 +16,10 @@ A comprehensive, production-ready template for integrating IoT devices with the 
 
 ### Key Features:
 - **Dynamic Health Scoring**: Real-time calculation based on connection status, device activity, data quality, and system metrics
-- **Intelligent Message Filtering**: Debug-enabled filtering with wildcard support
+- **Intelligent Message Filtering**: Debug-enabled filtering with wildcard support for MQTT topics
 - **Non-blocking Scheduled Tasks**: Prevents node-cron warnings with concurrent task prevention
-- **Production-Ready Error Handling**: Automatic reconnection, message queuing, comprehensive logging
-- **AI-Powered Monitoring**: IoT Coordinator agent with actual tool implementations
+- **Production-Ready Error Handling**: Automatic reconnection with timeout, comprehensive logging
+- **AI-Powered Monitoring**: IoT Coordinator agent with three functional MQTT tools
 
 ### Use Cases:
 - Smart Agriculture (sensor monitoring, irrigation control)

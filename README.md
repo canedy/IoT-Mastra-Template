@@ -80,24 +80,26 @@ Open http://localhost:4112 to interact with tools and workflows
 Create a `.env` file based on `.env.example`:
 
 ```env
-# MQTT Broker (Required)
-MQTT_BROKER_URL=wss://your-broker-url:8884/mqtt
+# HiveMQ Cloud (takes precedence if set)
+HIVEMQ_BROKER_URL=wss://your-cluster.hivemq.cloud:8884/mqtt
+HIVEMQ_USERNAME=your-hivemq-username
+HIVEMQ_PASSWORD=your-hivemq-password
+
+# Alternative MQTT Broker (fallback)
+MQTT_BROKER_URL=wss://broker.hivemq.com:8884/mqtt
 MQTT_USERNAME=your-username
 MQTT_PASSWORD=your-password
 
-# Optional Settings
+# Connection Settings
 MQTT_CLIENT_ID=mastra-iot-template
-MQTT_KEEP_ALIVE=60
-MQTT_CONNECT_TIMEOUT=30000
+MQTT_KEEP_ALIVE=60              # seconds
+MQTT_CONNECT_TIMEOUT=30000      # milliseconds
 MQTT_CLEAN_SESSION=true
 
-# Data Configuration
-DATA_STORE_TYPE=memory
-DATA_RETENTION_HOURS=24
-MAX_RECORDS_PER_DEVICE=1000
-
-# System Control
-AUTO_INIT=false
+# Storage & Scheduling
+DATA_STORE_TYPE=memory           # or 'file' for persistence
+ENABLE_SCHEDULING=true           # Enable automated monitoring
+AUTO_INIT=false                  # Auto-connect on startup
 ```
 
 ## ✨ Key Features
@@ -135,39 +137,30 @@ The template calculates real-time health scores based on:
 1. **MQTT Connection** (`mqtt-connection`)
    - Establish and manage broker connections
    - Support for WebSocket and TCP connections
-   - Automatic reconnection with backoff
+   - Automatic reconnection with timeout handling
+   - Connection status monitoring
 
 2. **MQTT Subscribe** (`mqtt-subscribe`)
-   - Subscribe to topics with wildcard support
-   - Message filtering and routing
+   - Subscribe to topics with wildcard support (+, #)
+   - Message filtering by JSON field values
    - Pause/resume functionality
+   - Debug logging for filtered messages
+   - List active subscriptions
 
 3. **MQTT Publish** (`mqtt-publish`)
-   - Publish messages with QoS support
+   - Publish messages with QoS support (0, 1, 2)
+   - JSON and string message support
+   - Topic validation
    - Batch publishing capabilities
-   - Message queuing when offline
-
-4. **Data Store** (`data-store`)
-   - Store IoT data with retention policies
-   - Query and aggregate historical data
-   - Export data in JSON/CSV formats
-
-5. **Message Processor** (`message-processor`)
-   - Register custom message handlers
-   - Transform, filter, and enrich data
-   - Alert generation based on conditions
 
 ### Workflows
 
-1. **Scheduled Monitoring** (`scheduled-monitoring`)
-   - Periodic data collection and analysis
-   - Metric calculation and alerting
-   - Automated report generation
-
-2. **Data Processing** (`data-processing`)
-   - Batch processing of IoT data
-   - Aggregation, transformation, filtering
-   - Result publishing to output topics
+1. **IoT Monitoring Workflow** (`iotMonitoringWorkflow`)
+   - Four monitoring types: routine, connectivity, data quality, daily summary
+   - Dynamic health score calculation (0-100)
+   - Issue detection and recommendations
+   - Automated scheduling with non-blocking execution
+   - Configurable via environment variables
 
 ### Agent
 
@@ -224,62 +217,86 @@ await mastra.getTool('mqtt-publish').execute({
 });
 ```
 
-### Schedule Monitoring
+### Execute Monitoring Workflow
 
 ```javascript
-// Start monitoring every 5 minutes
-import { startScheduledMonitoring } from './src/mastra/workflows/scheduled-monitoring.js';
-
-startScheduledMonitoring('*/5 * * * *', {
-  metrics: ['message_rate', 'device_availability'],
-  alert_thresholds: {
-    error_rate: 10
-  }
+// Run monitoring workflow
+const workflow = mastra.getWorkflow('iotMonitoringWorkflow');
+const result = await workflow.execute({
+  check_type: 'routine_monitoring', // or 'connectivity_check', 'data_quality_check', 'daily_summary'
+  output_format: 'summary'
 });
+
+// Scheduled monitoring runs automatically when ENABLE_SCHEDULING=true
+// - Routine: every 10 minutes
+// - Connectivity: every hour  
+// - Data quality: every 2 hours
+// - Daily summary: 8 AM
 ```
 
 ## Common Patterns
 
 ### Device Telemetry Collection
 ```javascript
-// Subscribe to all device telemetry
-subscriber.subscribe('devices/+/telemetry');
-
-// Process with automatic storage
-processor.register({
-  id: 'telemetry-processor',
-  topic_pattern: 'devices/+/telemetry',
-  handler_type: 'store'
+// Subscribe to all device telemetry with wildcards
+await mastra.getTool('mqtt-subscribe').execute({
+  context: {
+    action: 'subscribe',
+    config: {
+      topics: 'devices/+/telemetry',  // + matches any single level
+      qos: '1'
+    }
+  }
 });
-```
 
-### Real-time Alerts
-```javascript
-// Configure alert conditions
-processor.register({
-  id: 'temperature-alerts',
-  topic_pattern: 'sensors/+/temperature',
-  handler_type: 'alert',
-  config: {
-    conditions: [{
-      field: 'value',
-      operator: 'gt',
-      value: 40,
-      severity: 'high'
-    }]
+// Subscribe with filtering
+await mastra.getTool('mqtt-subscribe').execute({
+  context: {
+    action: 'subscribe',
+    config: {
+      topics: 'sensors/#',  // # matches multiple levels
+      filter: {
+        location: 'warehouse',
+        status: 'active'
+      }
+    }
   }
 });
 ```
 
-### Data Aggregation
+### Message Filtering and Monitoring
 ```javascript
-// Hourly aggregation workflow
-workflow.execute({
-  source_topic: 'sensors/+/data',
-  processing_type: 'aggregate',
-  processing_rules: {
-    group_by: 'sensor_id',
-    metrics: ['temperature', 'humidity']
+// Pause specific subscription
+await mastra.getTool('mqtt-subscribe').execute({
+  context: {
+    action: 'pause',
+    topic: 'sensors/+/temperature'
+  }
+});
+
+// List all active subscriptions
+const subs = await mastra.getTool('mqtt-subscribe').execute({
+  context: { action: 'list_subscriptions' }
+});
+console.log(subs.details.subscriptions);
+```
+
+### Health Monitoring
+```javascript
+// Check system health with AI agent
+const agent = mastra.getAgent('iotCoordinatorAgent');
+const health = await agent.generate([{
+  role: 'user',
+  content: 'Check MQTT connection status and analyze system health'
+}]);
+
+// Run scheduled monitoring workflow
+const workflow = mastra.getWorkflow('iotMonitoringWorkflow');
+const result = await workflow.execute({
+  check_type: 'connectivity_check',
+  filters: {
+    devices: ['sensor1', 'sensor2'],
+    severity: 'high'
   }
 });
 ```
@@ -303,10 +320,15 @@ workflow.execute({
 ### Project Structure
 ```
 src/mastra/
-├── index.ts                 # Main configuration
-├── tools/                   # MQTT and data tools
-├── workflows/              # Automated workflows
-└── agents/                 # AI coordinator
+├── index.ts                    # Main Mastra configuration
+├── tools/                      
+│   ├── mqtt-connection.ts      # MQTT broker connection management
+│   ├── mqtt-subscribe.ts       # Topic subscription with filtering
+│   └── mqtt-publish.ts         # Message publishing with QoS
+├── workflows/              
+│   └── scheduled-monitoring.ts # IoT monitoring workflow with scheduling
+└── agents/                 
+    └── iot-coordinator.ts      # AI-powered IoT system coordinator
 ```
 
 ### Running Tests
