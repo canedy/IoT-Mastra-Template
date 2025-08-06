@@ -1,15 +1,27 @@
 # IoT Integration Template for Mastra
 
-A generic, production-ready template for integrating IoT devices with the Mastra AI framework through MQTT brokers. This template provides foundational tools and workflows that developers can customize for their specific IoT use cases.
+A comprehensive, production-ready template for integrating IoT devices with the Mastra AI framework through MQTT brokers. This template provides foundational tools, workflows, and an AI-powered coordinator agent that developers can customize for their specific IoT use cases.
+
+## 🎯 Unique Value Proposition
+
+This template uniquely combines:
+- **Real-time IoT data streaming** with MQTT protocol support
+- **AI-powered monitoring** with dynamic health score calculation
+- **Automated workflows** for scheduled monitoring and data processing
+- **Intelligent message filtering** with debug capabilities
+- **Non-blocking task execution** preventing system overload
+
+Perfect for: Smart agriculture, industrial IoT, home automation, environmental monitoring, and any MQTT-based IoT ecosystem.
 
 ## Overview
 
 This template demonstrates:
-- Connecting Mastra applications to MQTT brokers
-- Subscribing to and processing IoT data streams
-- Publishing commands back to IoT devices
+- Connecting Mastra applications to any MQTT broker (HiveMQ, AWS IoT, etc.)
+- Subscribing to and processing IoT data streams with wildcard support
+- Publishing commands back to IoT devices with QoS guarantees
 - Implementing scheduled workflows for automated monitoring
 - Managing IoT data with configurable retention policies
+- AI-powered health monitoring with dynamic scoring
 
 ## Prerequisites
 
@@ -19,23 +31,47 @@ This template demonstrates:
 
 ## Quick Start
 
-1. **Clone and install dependencies:**
+### 1. Clone the template
 ```bash
+# Using this as a template (recommended)
+gh repo create my-iot-project --template mastra-iot-template
+cd my-iot-project
+
+# Or clone directly
 git clone <repository-url>
 cd template-hackathon-v2
-pnpm install
 ```
 
-2. **Configure environment:**
+### 2. Install dependencies
+```bash
+pnpm install
+# or npm install
+```
+
+### 3. Configure environment
 ```bash
 cp .env.example .env
 # Edit .env with your MQTT broker details
 ```
 
-3. **Start the application:**
-```bash
-pnpm dev
+For testing, you can use the free HiveMQ public broker:
+```env
+MQTT_BROKER_URL=wss://broker.hivemq.com:8884/mqtt
+# No username/password required for public broker
 ```
+
+### 4. Start the application
+```bash
+# Development mode with hot reload
+pnpm dev
+
+# Production build
+pnpm build
+pnpm start
+```
+
+### 5. Access the Mastra playground
+Open http://localhost:4112 to interact with tools and workflows
 
 ## Configuration
 
@@ -63,6 +99,34 @@ MAX_RECORDS_PER_DEVICE=1000
 # System Control
 AUTO_INIT=false
 ```
+
+## ✨ Key Features
+
+### Dynamic Health Scoring
+The template calculates real-time health scores based on:
+- Connection status and stability
+- Active device count and activity
+- Data quality and anomalies
+- Message processing errors
+- System resource utilization
+
+### Intelligent Message Filtering
+- Filter messages by any JSON field
+- Debug mode shows filtered messages
+- Support for wildcards (+, #) in topics
+- Pause/resume subscriptions without disconnecting
+
+### Non-blocking Scheduled Tasks
+- Prevents node-cron execution warnings
+- Concurrent task prevention
+- Graceful error handling
+- Configurable intervals via environment
+
+### Production-Ready Error Handling
+- Automatic reconnection with exponential backoff
+- Message queuing during disconnections
+- Comprehensive error logging
+- Graceful degradation
 
 ## Core Components
 
@@ -247,14 +311,57 @@ src/mastra/
 
 ### Running Tests
 ```bash
-pnpm test
-pnpm test:mqtt  # Test MQTT connection
+# Test MQTT connection
+pnpm test:mqtt
+
+# Type checking
+pnpm type-check
+
+# Run all checks
+pnpm test && pnpm type-check
 ```
 
-### Type Checking
-```bash
-pnpm type-check
+### Testing Your Setup
+
+1. **Test MQTT Connection:**
+```javascript
+// In Mastra playground or your code
+const result = await mastra.getTool('mqtt-connection').execute({
+  context: { action: 'status' }
+});
+console.log(result); // Should show connection status
 ```
+
+2. **Test Subscribe & Publish:**
+```javascript
+// Subscribe to test topic
+await mastra.getTool('mqtt-subscribe').execute({
+  context: {
+    action: 'subscribe',
+    config: { topics: 'test/+/data' }
+  }
+});
+
+// Publish test message
+await mastra.getTool('mqtt-publish').execute({
+  context: {
+    action: 'publish',
+    config: {
+      topic: 'test/device1/data',
+      message: { value: 42, timestamp: Date.now() }
+    }
+  }
+});
+```
+
+3. **Test Scheduled Monitoring:**
+The template includes automated monitoring that runs:
+- Routine monitoring: Every 10 minutes
+- Connectivity check: Every hour
+- Data quality check: Every 2 hours
+- Daily summary: 8 AM daily
+
+Check logs for monitoring results showing dynamic health scores.
 
 ## Production Deployment
 

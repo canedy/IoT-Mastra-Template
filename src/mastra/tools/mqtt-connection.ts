@@ -79,8 +79,23 @@ export const mqttConnectionTool = createTool({
 
           return new Promise((resolve) => {
             mqttClient = mqtt.connect(effectiveConfig.broker_url!, options);
+            
+            // Set connection timeout
+            const timeoutId = setTimeout(() => {
+              mqttClient?.end(true);
+              resolve({
+                success: false,
+                status: `Connection timeout after ${options.connectTimeout}ms`,
+                details: {
+                  broker_url: effectiveConfig.broker_url,
+                  timeout: options.connectTimeout
+                }
+              });
+            }, options.connectTimeout);
 
             mqttClient.on('connect', () => {
+              clearTimeout(timeoutId);
+              console.log(`[MQTT] Connected to ${effectiveConfig.broker_url}`);
               resolve({
                 success: true,
                 status: 'Connected to MQTT broker',
@@ -91,23 +106,27 @@ export const mqttConnectionTool = createTool({
               });
             });
 
-            mqttClient.on('error', (error) => {
+            mqttClient.on('error', (error: any) => {
+              clearTimeout(timeoutId);
+              console.error('[MQTT] Connection error:', error.message);
               resolve({
                 success: false,
                 status: `Connection error: ${error.message}`,
+                details: {
+                  error_code: error.code || 'UNKNOWN',
+                  broker_url: effectiveConfig.broker_url
+                }
               });
             });
-
-            setTimeout(() => {
-              if (!mqttClient?.connected) {
-                mqttClient?.end();
-                mqttClient = null;
-                resolve({
-                  success: false,
-                  status: 'Connection timeout',
-                });
-              }
-            }, options.connectTimeout);
+            
+            // Add reconnection event handlers for better monitoring
+            mqttClient.on('reconnect', () => {
+              console.log('[MQTT] Attempting to reconnect...');
+            });
+            
+            mqttClient.on('offline', () => {
+              console.log('[MQTT] Client is offline');
+            });
           });
         } catch (error) {
           return {
