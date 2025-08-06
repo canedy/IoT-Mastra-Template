@@ -1,6 +1,7 @@
 import { createTool } from '@mastra/core/tools';
 import { z } from 'zod';
 import { getMqttClient } from './mqtt-connection.js';
+import { iotDataStoreTool } from './iot-data-store.js';
 
 interface DeviceMetrics {
   deviceId: string;
@@ -67,22 +68,74 @@ export const iotReportGeneratorTool = createTool({
       startTime = new Date(now.getTime() - presets[time_range.preset]);
     }
 
-    // Gather metrics
+    // Gather metrics from real data store
     const client = getMqttClient();
     const connectionStatus = client?.connected ? 'Connected' : 'Disconnected';
     
-    // Simulate device metrics (in production, would query actual data)
-    const mockDevices = [
-      { id: 'sensor-001', status: 'online', messages: 1250, errors: 2 },
-      { id: 'sensor-002', status: 'online', messages: 1180, errors: 5 },
-      { id: 'actuator-001', status: 'degraded', messages: 890, errors: 45 },
-      { id: 'gateway-001', status: 'online', messages: 5420, errors: 0 }
-    ];
+    // Retrieve actual messages from data store
+    const messagesResult = await iotDataStoreTool.execute({
+      context: {
+        action: 'retrieve_messages',
+        limit: 1000 // Get more messages for analysis
+      }
+    });
 
-    const totalMessages = mockDevices.reduce((sum, d) => sum + d.messages, 0);
-    const totalErrors = mockDevices.reduce((sum, d) => sum + d.errors, 0);
-    const errorRate = ((totalErrors / totalMessages) * 100).toFixed(2);
-    const onlineDevices = mockDevices.filter(d => d.status === 'online').length;
+    let mockDevices, totalMessages, totalErrors, errorRate, onlineDevices;
+    
+    if (!messagesResult.success || !messagesResult.data || messagesResult.data.length === 0) {
+      // Fallback to mock data if no real data available
+      mockDevices = [
+        { id: 'no-data', status: 'unknown', messages: 0, errors: 0 }
+      ];
+      totalMessages = 0;
+      totalErrors = 0;
+      errorRate = '0.00';
+      onlineDevices = 0;
+    } else {
+      // Analyze real data
+      const messages = messagesResult.data as any[];
+      const deviceStats = new Map<string, { messages: number, errors: number, lastSeen: Date }>();
+      
+      // Process messages to calculate device statistics
+      messages.forEach((msg: any) => {
+        const deviceId = msg.deviceId;
+        if (!deviceStats.has(deviceId)) {
+          deviceStats.set(deviceId, { messages: 0, errors: 0, lastSeen: new Date(msg.timestamp) });
+        }
+        const stats = deviceStats.get(deviceId)!;
+        stats.messages++;
+        stats.lastSeen = new Date(msg.timestamp);
+        
+        // Simple error detection based on message content
+        if (msg.message && typeof msg.message === 'object') {
+          // Check for error indicators in the message
+          if (msg.message.error || msg.message.alarm || 
+              (msg.message.battery_level && msg.message.battery_level < 20) ||
+              (msg.message.signal_strength && msg.message.signal_strength < -80)) {
+            stats.errors++;
+          }
+        }
+      });
+
+      // Convert to device array format
+      mockDevices = Array.from(deviceStats.entries()).map(([deviceId, stats]) => {
+        const minutesSinceLastSeen = (Date.now() - stats.lastSeen.getTime()) / (1000 * 60);
+        const status = minutesSinceLastSeen < 10 ? 'online' : 
+                     minutesSinceLastSeen < 60 ? 'degraded' : 'offline';
+        
+        return {
+          id: deviceId,
+          status,
+          messages: stats.messages,
+          errors: stats.errors
+        };
+      });
+
+      totalMessages = mockDevices.reduce((sum, d) => sum + d.messages, 0);
+      totalErrors = mockDevices.reduce((sum, d) => sum + d.errors, 0);
+      errorRate = totalMessages > 0 ? ((totalErrors / totalMessages) * 100).toFixed(2) : '0.00';
+      onlineDevices = mockDevices.filter(d => d.status === 'online').length;
+    }
     
     // Generate report based on type
     let report = '';
@@ -94,12 +147,17 @@ export const iotReportGeneratorTool = createTool({
         summary = `IoT system operating at ${95 - parseFloat(errorRate)}% efficiency with ${onlineDevices}/${mockDevices.length} devices online`;
         
         if (format === 'markdown') {
+          const dataSource = messagesResult.success && messagesResult.data && messagesResult.data.length > 0 ? 
+            `Real-time data (${messagesResult.data.length} messages analyzed)` : 
+            'No live data - using fallback';
+            
           report = `# 📊 IoT System Executive Summary
           
 ## Overview
 **Report Generated:** ${now.toISOString()}  
 **Time Period:** ${time_range?.preset || 'Last 24 hours'}  
-**System Status:** ${connectionStatus}
+**System Status:** ${connectionStatus}  
+**Data Source:** ${dataSource}
 
 ## Key Metrics
 | Metric | Value | Trend |

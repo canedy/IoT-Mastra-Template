@@ -13,10 +13,9 @@ const connectionConfigSchema = z.object({
   clean_session: z.boolean().optional().default(true).describe('Clean session flag'),
   keep_alive: z.number().optional().default(60).describe('Keep alive interval in seconds'),
   reconnect: z.boolean().optional().default(true).describe('Enable automatic reconnection'),
-  qos: z.enum(['0', '1', '2']).optional().default('1').describe('Default QoS level'),
 });
 
-const actionSchema = z.enum(['connect', 'disconnect', 'status', 'reconnect']);
+const actionSchema = z.enum(['connect', 'disconnect', 'status']);
 
 export const mqttConnectionTool = createTool({
   id: 'mqtt-connection',
@@ -44,7 +43,6 @@ export const mqttConnectionTool = createTool({
           clean_session: config?.clean_session ?? (process.env.MQTT_CLEAN_SESSION === 'true'),
           keep_alive: config?.keep_alive ?? parseInt(process.env.MQTT_KEEP_ALIVE || '60'),
           reconnect: config?.reconnect ?? true,
-          qos: config?.qos || '1',
         };
 
         if (!effectiveConfig.broker_url) {
@@ -163,27 +161,6 @@ export const mqttConnectionTool = createTool({
             broker_url: connectionConfig?.broker_url,
             client_id: mqttClient?.options.clientId,
           },
-        };
-
-      case 'reconnect':
-        if (!mqttClient) {
-          return {
-            success: false,
-            status: 'No connection to reconnect',
-          };
-        }
-
-        if (mqttClient.connected) {
-          return {
-            success: false,
-            status: 'Already connected',
-          };
-        }
-
-        mqttClient.reconnect();
-        return {
-          success: true,
-          status: 'Reconnection initiated',
         };
 
       default:

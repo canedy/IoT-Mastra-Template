@@ -110,109 +110,63 @@ const checkSystemHealth = createStep({
 
     switch (inputData.check_type) {
       case "routine_monitoring":
+        // Use agent for routine monitoring
         const routinePrompt = `
-          Perform a routine IoT system monitoring check:
-          1. Use the mqttConnection tool with action "status" to check MQTT broker connection
-          2. Use the mqttSubscribe tool with action "list_subscriptions" to see active subscriptions
-          3. Check recent message activity from subscriptions
-          4. Review subscription activity and message flow
-          5. Analyze data freshness and identify any devices with stale data
-          6. Generate recommendations based on findings
-          ${contextInfo}
+          Perform a quick routine monitoring check:
+          1. Check MQTT connection status using mqttConnection tool (action: "status")
+          2. List active subscriptions using mqttSubscribe tool (action: "list_subscriptions")
+          3. Provide a brief health assessment
           
-          IMPORTANT: Count and report the actual numbers you find:
-          - How many active subscriptions exist
-          - How many unique device IDs you can identify from topics (e.g., sensors/sensorB/raw has device "sensorB")
-          - Report these numbers clearly in your response
-          
-          Return a detailed report of the monitoring results including connection status, 
-          data flow health, and any issues discovered.
+          Be concise - just check connectivity and subscription status.
+          Format: Brief status summary with connection state and subscription count.
         `;
 
-        const routineResult = await agent.generate([
-          {
-            role: "user",
-            content: routinePrompt,
-          },
-        ]);
+        const routineResponse = await agent.generate(routinePrompt);
+        const responseText = routineResponse.text || "";
 
-        // Extract numbers from agent response
-        const routineResponse = routineResult.text || "";
-        console.log("📋 Routine monitoring response:", routineResponse);
-
-        const deviceMatch = routineResponse.match(
-          /(\d+)\s+(?:unique\s+)?devices?/i
-        );
-        const subscriptionMatch = routineResponse.match(
-          /(\d+)\s+(?:active\s+)?subscriptions?/i
-        );
-
-        result.devices_checked = deviceMatch ? parseInt(deviceMatch[1]) : 1;
-        result.messages_analyzed = subscriptionMatch
-          ? parseInt(subscriptionMatch[1])
-          : 1;
-
-        // Calculate health score based on actual metrics
+        // Parse routine monitoring results
+        const connectedMatch = responseText.match(/connected|online|healthy/i);
+        const disconnectedMatch = responseText.match(/disconnected|offline|failed/i);
+        const subCountMatch = responseText.match(/(\d+)\s+(?:active\s+)?subscription/i);
+        
         let healthScore = 100;
         
-        // Check for connection issues
-        if (routineResponse.toLowerCase().includes("not connected") || 
-            routineResponse.toLowerCase().includes("disconnected")) {
+        if (disconnectedMatch) {
           healthScore -= 50;
           result.issues_found++;
+          result.recommendations.push("MQTT connection issue detected");
+          result.actions_taken.push("MQTT connection check: failed");
+        } else if (connectedMatch) {
+          result.actions_taken.push("MQTT connection check: healthy");
         }
         
-        // Check for missing subscriptions
-        if (result.messages_analyzed === 0) {
+        const subscriptionCount = subCountMatch ? parseInt(subCountMatch[1]) : 0;
+        if (subscriptionCount === 0) {
           healthScore -= 30;
           result.issues_found++;
-          result.recommendations.push("No active subscriptions found - consider subscribing to topics");
+          result.recommendations.push("No active subscriptions found");
         }
+        result.actions_taken.push(`Found ${subscriptionCount} active subscriptions`);
         
-        // Check for offline devices
-        const offlineMatch = routineResponse.match(/(\d+)\s+(?:offline|inactive|disconnected)/i);
-        if (offlineMatch) {
-          const offlineCount = parseInt(offlineMatch[1]);
-          healthScore -= (offlineCount * 10);
-          result.issues_found += offlineCount;
-          result.recommendations.push(`${offlineCount} device(s) appear offline`);
-        }
-        
-        // Check for errors or warnings in response
-        if (routineResponse.toLowerCase().includes("error")) {
-          healthScore -= 15;
-          result.issues_found++;
-        }
-        if (routineResponse.toLowerCase().includes("warning")) {
-          healthScore -= 10;
-          result.issues_found++;
-        }
-        
-        // Ensure health score stays in valid range
+        result.devices_checked = 1;
+        result.messages_analyzed = subscriptionCount;
         result.system_health_score = Math.max(0, Math.min(100, healthScore));
-
-        result.actions_taken.push("Checked MQTT connection status");
-        result.actions_taken.push("Verified active subscriptions");
-        result.actions_taken.push(
-          `Analyzed ${result.devices_checked} devices and ${result.messages_analyzed} subscriptions`
-        );
-        result.actions_taken.push("Reviewed subscription activity");
-        result.actions_taken.push("Calculated system health score");
         result.next_check = new Date(Date.now() + 30 * 60000).toISOString();
         break;
 
       case "connectivity_check":
         const connectivityPrompt = `
-          Perform a comprehensive connectivity check:
-          1. Use the mqttConnection tool with action "status" to verify broker connection
-          2. Check message activity from active subscriptions
-          3. Analyze data patterns to identify offline or intermittent devices
-          4. Check for devices that haven't sent data recently
-          5. Use the mqttPublish tool to send test messages if needed
-          6. Generate connectivity health report
+          Perform a connectivity check:
+          1. Check MQTT connection status using mqttConnection tool (action: "status")
+          2. List subscriptions using mqttSubscribe tool (action: "list_subscriptions") 
+          
+          Report:
+          - Broker connection status
+          - Number of active subscriptions
+          - Any connectivity issues
           ${contextInfo}
           
-          IMPORTANT: Report actual device and subscription counts found.
+          Be brief and focus on connection health only.
         `;
 
         const connectivityResult = await agent.generate([
@@ -237,30 +191,39 @@ const checkSystemHealth = createStep({
 
         // Calculate connectivity health score
         let connHealthScore = 100;
-        
+
         // Check for connection failures
-        if (connectivityResponse.toLowerCase().includes("failed") ||
-            connectivityResponse.toLowerCase().includes("unreachable")) {
+        if (
+          connectivityResponse.toLowerCase().includes("failed") ||
+          connectivityResponse.toLowerCase().includes("unreachable")
+        ) {
           connHealthScore -= 40;
           result.issues_found++;
         }
-        
+
         // Check for offline/disconnected devices
-        const offlineDevices = connectivityResponse.match(/(\d+)\s+(?:offline|disconnected|inactive)/i);
+        const offlineDevices = connectivityResponse.match(
+          /(\d+)\s+(?:offline|disconnected|inactive)/i
+        );
         if (offlineDevices) {
           const count = parseInt(offlineDevices[1]);
-          connHealthScore -= (count * 15);
+          connHealthScore -= count * 15;
           result.issues_found += count;
         }
-        
+
         // Check for intermittent connections
         if (connectivityResponse.toLowerCase().includes("intermittent")) {
           connHealthScore -= 20;
           result.issues_found++;
-          result.recommendations.push("Intermittent connections detected - check network stability");
+          result.recommendations.push(
+            "Intermittent connections detected - check network stability"
+          );
         }
-        
-        result.system_health_score = Math.max(0, Math.min(100, connHealthScore));
+
+        result.system_health_score = Math.max(
+          0,
+          Math.min(100, connHealthScore)
+        );
 
         result.actions_taken.push("Verified MQTT broker connectivity");
         result.actions_taken.push("Analyzed device communication patterns");
@@ -272,16 +235,16 @@ const checkSystemHealth = createStep({
 
       case "data_quality_check":
         const dataQualityPrompt = `
-          Perform a data quality assessment:
-          1. Review recent message patterns from subscriptions
-          2. Analyze message frequency and patterns from subscriptions
-          3. Check subscription performance and message flow
-          4. Analyze data for anomalies and consistency
-          5. Check data retention and cleanup status
-          6. Generate data quality recommendations
+          Perform a basic data quality check:
+          1. Check subscription status using mqttSubscribe tool (action: "list_subscriptions")
+          
+          Report:
+          - Number of active subscriptions
+          - Any obvious data quality issues
+          - Brief assessment of message flow
           ${contextInfo}
           
-          IMPORTANT: Report actual device and subscription counts found.
+          Keep response concise and focus on key quality metrics.
         `;
 
         const dataQualityResult = await agent.generate([
@@ -306,38 +269,53 @@ const checkSystemHealth = createStep({
 
         // Calculate data quality health score
         let dataHealthScore = 100;
-        
+
         // Check for data anomalies
-        if (dataResponse.toLowerCase().includes("anomaly") ||
-            dataResponse.toLowerCase().includes("anomalies")) {
+        if (
+          dataResponse.toLowerCase().includes("anomaly") ||
+          dataResponse.toLowerCase().includes("anomalies")
+        ) {
           dataHealthScore -= 25;
           result.issues_found++;
-          result.recommendations.push("Data anomalies detected - review sensor calibration");
+          result.recommendations.push(
+            "Data anomalies detected - review sensor calibration"
+          );
         }
-        
+
         // Check for missing data
-        if (dataResponse.toLowerCase().includes("missing data") ||
-            dataResponse.toLowerCase().includes("gaps")) {
+        if (
+          dataResponse.toLowerCase().includes("missing data") ||
+          dataResponse.toLowerCase().includes("gaps")
+        ) {
           dataHealthScore -= 20;
           result.issues_found++;
         }
-        
+
         // Check for format errors
-        if (dataResponse.toLowerCase().includes("format error") ||
-            dataResponse.toLowerCase().includes("invalid")) {
+        if (
+          dataResponse.toLowerCase().includes("format error") ||
+          dataResponse.toLowerCase().includes("invalid")
+        ) {
           dataHealthScore -= 15;
           result.issues_found++;
         }
-        
+
         // Check for stale data
-        if (dataResponse.toLowerCase().includes("stale") ||
-            dataResponse.toLowerCase().includes("outdated")) {
+        if (
+          dataResponse.toLowerCase().includes("stale") ||
+          dataResponse.toLowerCase().includes("outdated")
+        ) {
           dataHealthScore -= 30;
           result.issues_found++;
-          result.recommendations.push("Stale data detected - check device update frequency");
+          result.recommendations.push(
+            "Stale data detected - check device update frequency"
+          );
         }
-        
-        result.system_health_score = Math.max(0, Math.min(100, dataHealthScore));
+
+        result.system_health_score = Math.max(
+          0,
+          Math.min(100, dataHealthScore)
+        );
 
         result.actions_taken.push("Analyzed data quality metrics");
         result.actions_taken.push("Checked processing error rates");
@@ -519,46 +497,93 @@ iotMonitoringWorkflow.commit();
 // Scheduled tasks storage
 let scheduledTasks: cron.ScheduledTask[] = [];
 
+// Flag to prevent duplicate initialization during hot reload
+let isInitialized = false;
+
 // Track running tasks to prevent overlaps
 const runningTasks = new Set<string>();
 
 // Helper function to execute workflow without blocking
-async function executeWorkflowNonBlocking(
+function executeWorkflowNonBlocking(
   mastra: any,
   checkType: string,
   taskName: string
-): Promise<void> {
+): void {
+  const executionId = `${taskName}-${Date.now()}`;
+  console.log(
+    `🚀 [${new Date().toISOString()}] Starting ${taskName} (${executionId})`
+  );
+
   // Skip if task is already running
   if (runningTasks.has(taskName)) {
-    console.log(`⏳ ${taskName} is already running, skipping...`);
+    console.log(
+      `⏳ [${new Date().toISOString()}] ${taskName} is already running, skipping...`
+    );
     return;
   }
 
   runningTasks.add(taskName);
 
-  // Use setImmediate to avoid blocking the event loop
-  setImmediate(async () => {
+  // Use setTimeout(0) instead of setImmediate for better event loop handling
+  setTimeout(async () => {
+    const startTime = Date.now();
     try {
+      console.log(
+        `🔧 [${new Date().toISOString()}] ${taskName} getting workflow...`
+      );
       const workflow = mastra.getWorkflow("iotMonitoringWorkflow");
       if (workflow) {
-        const result = await workflow.execute({
+        console.log(
+          `⚙️ [${new Date().toISOString()}] ${taskName} executing workflow...`
+        );
+
+        // Reduce timeout to 2 minutes to prevent long blocks
+        const timeoutPromise = new Promise((_, reject) => {
+          setTimeout(
+            () => reject(new Error("Workflow timeout after 2 minutes")),
+            2 * 60 * 1000
+          );
+        });
+
+        const workflowPromise = workflow.execute({
           check_type: checkType,
         });
 
-        console.log(`✅ ${taskName} completed:`, {
-          summary: result.summary,
-          notifications: result.notifications_sent,
-          actions: result.follow_up_actions?.length || 0,
-        });
+        const result = await Promise.race([workflowPromise, timeoutPromise]);
+        const duration = Date.now() - startTime;
+
+        console.log(
+          `✅ [${new Date().toISOString()}] ${taskName} completed in ${duration}ms:`,
+          {
+            summary: result?.summary || "No summary",
+            notifications: result?.notifications_sent || 0,
+            actions: result?.follow_up_actions?.length || 0,
+          }
+        );
       } else {
-        console.error("iotMonitoringWorkflow not found");
+        console.error(
+          `❌ [${new Date().toISOString()}] ${taskName}: iotMonitoringWorkflow not found`
+        );
       }
     } catch (error) {
-      console.error(`Error in ${taskName}:`, error);
+      const duration = Date.now() - startTime;
+      if (error instanceof Error && error.message?.includes("timeout")) {
+        console.warn(
+          `⏰ [${new Date().toISOString()}] ${taskName} timed out after ${duration}ms`
+        );
+      } else {
+        console.error(
+          `💥 [${new Date().toISOString()}] Error in ${taskName} after ${duration}ms:`,
+          error
+        );
+      }
     } finally {
       runningTasks.delete(taskName);
+      console.log(
+        `🏁 [${new Date().toISOString()}] ${taskName} cleanup completed`
+      );
     }
-  });
+  }, 0);
 }
 
 // Initialize scheduled monitoring when Mastra starts
@@ -571,21 +596,41 @@ export function initializeScheduledMonitoring(mastra: any): void {
     return;
   }
 
+  // Prevent duplicate initialization during hot reload
+  if (isInitialized) {
+    console.log("⚠️  Scheduled monitoring already initialized, skipping...");
+    return;
+  }
+
   console.log("🕐 Initializing IoT scheduled monitoring tasks...");
 
-  // Clear any existing tasks
+  // Clear any existing tasks (just in case)
   stopScheduledMonitoring();
+  
+  // Mark as initialized
+  isInitialized = true;
 
-  // Routine monitoring every 10 minutes
-  const routineTask = cron.schedule("*/10 * * * *", () => {
-    console.log("🔍 Running routine IoT monitoring...");
-    // Don't await - let it run in background
-    executeWorkflowNonBlocking(
-      mastra,
-      "routine_monitoring",
-      "Routine Monitoring"
-    );
-  });
+  // Routine monitoring every 30 minutes
+  const routineTask = cron.schedule(
+    "*/30 * * * *",
+    () => {
+      const startTime = new Date();
+      console.log(
+        `🔍 [${startTime.toISOString()}] Running routine IoT monitoring...`
+      );
+
+      // Don't await - let it run in background
+      executeWorkflowNonBlocking(
+        mastra,
+        "routine_monitoring",
+        "Routine Monitoring"
+      );
+    },
+    {
+      timezone: "America/New_York",
+    }
+  );
+  routineTask.start();
   scheduledTasks.push(routineTask);
 
   // Connectivity check every hour
@@ -598,6 +643,7 @@ export function initializeScheduledMonitoring(mastra: any): void {
       "Connectivity Check"
     );
   });
+  connectivityTask.start();
   scheduledTasks.push(connectivityTask);
 
   // Data quality check every 2 hours
@@ -610,6 +656,7 @@ export function initializeScheduledMonitoring(mastra: any): void {
       "Data Quality Check"
     );
   });
+  dataQualityTask.start();
   scheduledTasks.push(dataQualityTask);
 
   // Daily summary at 8 AM every day
@@ -618,6 +665,7 @@ export function initializeScheduledMonitoring(mastra: any): void {
     // Don't await - let it run in background
     executeWorkflowNonBlocking(mastra, "daily_summary", "Daily Summary");
   });
+  dailySummaryTask.start();
   scheduledTasks.push(dailySummaryTask);
 
   console.log("✅ IoT scheduled monitoring tasks initialized");
@@ -638,6 +686,7 @@ export function stopScheduledMonitoring(): void {
   if (scheduledTasks.length > 0) {
     scheduledTasks.forEach((task) => task.stop());
     scheduledTasks = [];
+    isInitialized = false; // Reset initialization flag
     console.log("⏹️  Stopped all scheduled monitoring tasks");
   }
 }

@@ -1,6 +1,7 @@
 import { createTool } from '@mastra/core/tools';
 import { z } from 'zod';
 import { getMqttClient } from './mqtt-connection.js';
+import { storeMessage } from './iot-data-store.js';
 
 interface Subscription {
   topic: string;
@@ -230,8 +231,20 @@ function handleMessage(topic: string, message: Buffer) {
         }
       }
 
-      // Simple message logging
+      // Log the message
       console.log(`[MQTT] Received on ${topic}:`, parsedMessage);
+      
+      // Store message data using IoT data store (non-blocking)
+      const deviceId = extractDeviceId(topic);
+      const messageType = determineMessageType(topic, parsedMessage);
+      
+      // Store data in background without blocking message processing
+      const stored = storeMessage(deviceId, topic, parsedMessage, messageType);
+      if (stored) {
+        console.log(`[MQTT] ✅ Stored ${messageType} message from ${deviceId}`);
+      } else {
+        console.warn(`[MQTT] ⚠️ Failed to store message from ${deviceId}`);
+      }
     } catch (error) {
       console.error(`[MQTT] Error processing message on ${topic}:`, error);
     }
@@ -249,5 +262,69 @@ function topicMatches(actualTopic: string, subscriptionTopic: string): boolean {
   }
 
   return actualParts.length === subParts.length;
+}
+
+/**
+ * Extract device ID from MQTT topic using common IoT topic patterns
+ */
+function extractDeviceId(topic: string): string {
+  const parts = topic.split('/');
+  
+  // Common patterns:
+  // devices/{device_id}/telemetry -> devices[1]
+  // sensors/{location}/{device_id} -> sensors[2] 
+  // {device_id}/data -> parts[0]
+  // home/{room}/{device_type}/{device_id} -> parts[3]
+  
+  if (parts[0] === 'devices' && parts.length >= 2) {
+    return parts[1];
+  } else if (parts[0] === 'sensors' && parts.length >= 3) {
+    return parts[2];
+  } else if (parts[0] === 'home' && parts.length >= 4) {
+    return parts[3];
+  } else if (parts.length >= 2) {
+    // Try to find a part that looks like a device ID (contains letters and numbers)
+    for (let i = 0; i < parts.length; i++) {
+      if (/^[a-zA-Z0-9_-]+$/.test(parts[i]) && parts[i].length > 2) {
+        return parts[i];
+      }
+    }
+  }
+  
+  // Fallback: use first part or generate from topic
+  return parts[0] || `device_${topic.replace(/[^a-zA-Z0-9]/g, '_')}`;
+}
+
+/**
+ * Determine message type based on topic and content
+ */
+function determineMessageType(topic: string, message: any): 'telemetry' | 'status' | 'command' | 'alert' | 'other' {
+  const lowerTopic = topic.toLowerCase();
+  
+  // Check topic patterns
+  if (lowerTopic.includes('telemetry') || lowerTopic.includes('data') || lowerTopic.includes('sensors')) {
+    return 'telemetry';
+  } else if (lowerTopic.includes('status') || lowerTopic.includes('state')) {
+    return 'status';
+  } else if (lowerTopic.includes('command') || lowerTopic.includes('control')) {
+    return 'command';
+  } else if (lowerTopic.includes('alert') || lowerTopic.includes('alarm') || lowerTopic.includes('error')) {
+    return 'alert';
+  }
+  
+  // Check message content
+  if (typeof message === 'object' && message) {
+    if (message.temperature || message.humidity || message.pressure || message.sensor_data) {
+      return 'telemetry';
+    } else if (message.status || message.state || message.online !== undefined) {
+      return 'status';
+    } else if (message.command || message.action || message.control) {
+      return 'command';
+    } else if (message.alert || message.alarm || message.error || message.severity) {
+      return 'alert';
+    }
+  }
+  
+  return 'other';
 }
 

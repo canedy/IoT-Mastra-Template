@@ -6,7 +6,7 @@ import { mqttConnectionTool } from '../tools/mqtt-connection.js';
 import { mqttSubscribeTool } from '../tools/mqtt-subscribe.js';
 import { mqttPublishTool } from '../tools/mqtt-publish.js';
 import { iotReportGeneratorTool } from '../tools/iot-report-generator.js';
-import { iotEvaluationTool } from '../tools/iot-evaluation.js';
+import { iotDataStoreTool } from '../tools/iot-data-store.js';
 
 export const iotCoordinatorAgent = new Agent({
   name: 'IOTOR - Your Friendly IoT Coordinator',
@@ -44,7 +44,6 @@ export const iotCoordinatorAgent = new Agent({
     - mqttSubscribe: Subscribe to topics and manage subscriptions (actions: subscribe, unsubscribe, list_subscriptions, pause, resume)
     - mqttPublish: Publish messages and commands to devices (actions: publish, publish_batch, publish_retained, clear_retained)
     - iotReportGenerator: Generate comprehensive IoT reports (types: executive_summary, technical_analysis, anomaly_report, compliance_audit, performance_metrics)
-    - iotEvaluation: Evaluate IoT monitoring accuracy and system performance against benchmarks (types: health_score_accuracy, anomaly_detection_rate, full_system_evaluation)
 
     You have access to the following workflows:
     - scheduled-monitoring: Set up periodic monitoring tasks
@@ -68,7 +67,7 @@ export const iotCoordinatorAgent = new Agent({
     mqttSubscribe: mqttSubscribeTool,
     mqttPublish: mqttPublishTool,
     iotReportGenerator: iotReportGeneratorTool,
-    iotEvaluation: iotEvaluationTool,
+    iotDataStore: iotDataStoreTool,
   },
   memory: new Memory({
     storage: new LibSQLStore({

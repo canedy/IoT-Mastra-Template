@@ -33,8 +33,12 @@ export const mastra = new Mastra({
 });
 
 // Initialize scheduled monitoring if enabled
+console.log('🔍 Checking ENABLE_SCHEDULING environment variable...');
+console.log(`   ENABLE_SCHEDULING = "${process.env.ENABLE_SCHEDULING}"`);
 if (process.env.ENABLE_SCHEDULING === 'true') {
-  console.log('🚀 Initializing IoT scheduled monitoring...');
+  console.log('🚀 ENABLE_SCHEDULING is true, initializing IoT scheduled monitoring...');
   initializeScheduledMonitoring(mastra);
+} else {
+  console.log('⏸️  ENABLE_SCHEDULING is not true, skipping scheduled monitoring');
 }
 

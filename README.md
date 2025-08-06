@@ -119,12 +119,6 @@ The template calculates real-time health scores based on:
 - Performance metrics with trends
 - Fun facts and insights with personality
 
-### 📈 Performance Evaluation Framework
-- Health score accuracy evaluation
-- Anomaly detection performance metrics
-- Confusion matrix analysis with precision/recall
-- Benchmark comparison and improvement recommendations
-- System performance trending
 
 ### 🤖 AI Agent with Personality (IOTOR)
 - Enthusiastic IoT coordinator with humor
@@ -145,23 +139,31 @@ The template calculates real-time health scores based on:
 ### Tools
 
 1. **MQTT Connection** (`mqtt-connection`)
-   - Establish and manage broker connections
-   - Support for WebSocket and TCP connections
-   - Automatic reconnection with timeout handling
-   - Connection status monitoring
+   - Establish and manage broker connections with WebSocket and TCP support
+   - **Actions:** `connect`, `disconnect`, `status`
+   - **Configuration options:**
+     - `clean_session`: Controls session persistence (default: true). When false, broker maintains subscriptions and queued messages during disconnections
+     - `keep_alive`: Ping interval in seconds to maintain connection (default: 60)
+     - `reconnect`: Enable automatic reconnection on connection loss (default: true)
+   - Automatic reconnection with configurable timeout handling
+   - Connection status monitoring with event logging
 
 2. **MQTT Subscribe** (`mqtt-subscribe`)
    - Subscribe to topics with wildcard support (+, #)
-   - Message filtering by JSON field values
-   - Pause/resume functionality
-   - Debug logging for filtered messages
-   - List active subscriptions
+   - **Actions:** `subscribe`, `unsubscribe`, `list_subscriptions`, `pause`, `resume`
+   - **Configuration options:**
+     - `qos`: Quality of Service level (0, 1, or 2) - controls message delivery guarantees
+     - `filter`: JSON object for message filtering - only processes messages matching all specified field values
+   - **Pause/Resume:** Temporarily stop processing messages without unsubscribing (useful for debugging)
+   - Debug logging shows filtered-out messages with reasons
+   - Non-blocking message storage in background
 
 3. **MQTT Publish** (`mqtt-publish`)
-   - Publish messages with QoS support (0, 1, 2)
-   - JSON and string message support
-   - Topic validation
-   - Batch publishing capabilities
+   - Publish messages with QoS support (0: at most once, 1: at least once, 2: exactly once)
+   - **Actions:** `publish`, `publish_batch`, `publish_retained`, `clear_retained`
+   - JSON and string message support with automatic serialization
+   - Topic validation and error handling
+   - Batch publishing for efficient bulk operations
 
 4. **IoT Report Generator** (`iot-report-generator`)
    - Automated executive summaries and technical reports
@@ -169,13 +171,6 @@ The template calculates real-time health scores based on:
    - Compliance audit documentation
    - Performance metrics analysis
    - Export formats: Markdown, JSON, HTML, PDF-ready
-
-5. **IoT Evaluation Framework** (`iot-evaluation`)
-   - Health score accuracy evaluation
-   - Anomaly detection performance metrics
-   - Confusion matrix analysis
-   - Precision, recall, and F1 score calculations
-   - Benchmark comparison and improvement recommendations
 
 ### Workflows
 
@@ -192,7 +187,6 @@ The template calculates real-time health scores based on:
 - AI-powered assistant with personality and humor 🤖
 - Expert in MQTT protocols and IoT troubleshooting
 - Generates automated reports with insights and fun facts
-- Evaluates system performance against benchmarks  
 - Provides recommendations with enthusiasm and IoT puns
 
 ## Usage Examples
@@ -200,30 +194,58 @@ The template calculates real-time health scores based on:
 ### Basic MQTT Connection
 
 ```javascript
-// Connect to broker
+// Connect to broker with session persistence
 const result = await mastra.getTool('mqtt-connection').execute({
   context: {
     action: 'connect',
     config: {
       broker_url: 'wss://broker.hivemq.com:8884/mqtt',
       username: 'user',
-      password: 'pass'
+      password: 'pass',
+      clean_session: false,  // Maintain session across reconnections
+      keep_alive: 60,        // Send ping every 60 seconds
+      reconnect: true        // Auto-reconnect if connection drops
     }
   }
+});
+
+// Check connection status
+const status = await mastra.getTool('mqtt-connection').execute({
+  context: { action: 'status' }
 });
 ```
 
 ### Subscribe to Topics
 
 ```javascript
-// Subscribe to temperature sensors
+// Subscribe with QoS and filtering
 await mastra.getTool('mqtt-subscribe').execute({
   context: {
     action: 'subscribe',
     config: {
       topics: 'sensors/+/temperature',
-      qos: '1'
+      qos: '1',  // At least once delivery
+      filter: {  // Only process messages matching these criteria
+        type: 'temperature',
+        location: 'warehouse'
+      }
     }
+  }
+});
+
+// Pause subscription temporarily (messages ignored but subscription maintained)
+await mastra.getTool('mqtt-subscribe').execute({
+  context: {
+    action: 'pause',
+    topic: 'sensors/+/temperature'
+  }
+});
+
+// Resume processing messages
+await mastra.getTool('mqtt-subscribe').execute({
+  context: {
+    action: 'resume',
+    topic: 'sensors/+/temperature'
   }
 });
 ```
@@ -292,7 +314,22 @@ await mastra.getTool('mqtt-subscribe').execute({
 
 ### Message Filtering and Monitoring
 ```javascript
-// Pause specific subscription
+// Subscribe with advanced filtering - only process critical alerts
+await mastra.getTool('mqtt-subscribe').execute({
+  context: {
+    action: 'subscribe',
+    config: {
+      topics: 'alerts/#',
+      qos: '2',  // Exactly once delivery for critical alerts
+      filter: {
+        severity: 'critical',
+        acknowledged: false
+      }
+    }
+  }
+});
+
+// Pause specific subscription for maintenance
 await mastra.getTool('mqtt-subscribe').execute({
   context: {
     action: 'pause',
@@ -300,11 +337,20 @@ await mastra.getTool('mqtt-subscribe').execute({
   }
 });
 
-// List all active subscriptions
+// List all active subscriptions with their status
 const subs = await mastra.getTool('mqtt-subscribe').execute({
   context: { action: 'list_subscriptions' }
 });
+// Returns: { topic, qos, paused, has_filter } for each subscription
 console.log(subs.details.subscriptions);
+
+// Resume after maintenance
+await mastra.getTool('mqtt-subscribe').execute({
+  context: {
+    action: 'resume', 
+    topic: 'sensors/+/temperature'
+  }
+});
 ```
 
 ### Health Monitoring & Reporting
@@ -325,18 +371,7 @@ const report = await mastra.getTool('iot-report-generator').execute({
   }
 });
 
-// Evaluate monitoring accuracy
-const evaluation = await mastra.getTool('iot-evaluation').execute({
-  context: {
-    evaluation_type: 'full_system_evaluation',
-    benchmark_thresholds: {
-      min_accuracy: 90,
-      min_precision: 95
-    }
-  }
-});
-
-console.log(`System accuracy: ${evaluation.overall_accuracy}%`);
+console.log(report.data.report);
 ```
 
 ## Supported MQTT Brokers
@@ -363,8 +398,7 @@ src/mastra/
 │   ├── mqtt-connection.ts      # MQTT broker connection management
 │   ├── mqtt-subscribe.ts       # Topic subscription with filtering
 │   ├── mqtt-publish.ts         # Message publishing with QoS
-│   ├── iot-report-generator.ts # Automated IoT reporting system
-│   └── iot-evaluation.ts       # Performance evaluation framework
+│   └── iot-report-generator.ts # Automated IoT reporting system
 ├── workflows/              
 │   └── scheduled-monitoring.ts # IoT monitoring workflow with scheduling
 └── agents/                 
