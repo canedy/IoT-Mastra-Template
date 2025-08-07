@@ -7,7 +7,7 @@
     "test": "echo \"Error: no test specified\" && exit 1",
     "test:mqtt": "node -e \"console.log('MQTT test - check your .env configuration')\"",
     "dev": "mastra dev",
-    "build": "mastra build", 
+    "build": "mastra build",
     "start": "mastra start"
   },
   "keywords": [],
@@ -25,10 +25,12 @@
     "@mastra/memory": "^0.12.0",
     "mqtt": "^5.14.0",
     "node-cron": "^3.0.3",
+    "openai": "^5.12.0",
     "zod": "^3.25.76"
   },
   "devDependencies": {
     "@types/node": "^24.2.0",
+    "@types/node-cron": "^3.0.11",
     "mastra": "^0.10.18",
     "typescript": "^5.9.2"
   }

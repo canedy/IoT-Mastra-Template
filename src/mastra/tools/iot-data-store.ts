@@ -49,6 +49,21 @@ export function storeMessage(
   }
 }
 
+// Helper function to get stored messages for a device (used by voice response tool)
+export function getStoredMessages(deviceId: string, limit: number = 10): IoTMessage[] {
+  const allMessages = Array.from(messageStorage.values());
+  
+  // Filter by device ID if specified
+  const filteredMessages = deviceId 
+    ? allMessages.filter((message: IoTMessage) => message.deviceId === deviceId)
+    : allMessages;
+  
+  // Sort by timestamp (most recent first) and limit
+  return filteredMessages
+    .sort((a: IoTMessage, b: IoTMessage) => new Date(b.timestamp).getTime() - new Date(a.timestamp).getTime())
+    .slice(0, limit);
+}
+
 export const iotDataStoreTool = createTool({
   id: "iot-data-store",
   description: "Simple IoT message storage - store and retrieve MQTT messages",
@@ -65,6 +80,7 @@ export const iotDataStoreTool = createTool({
           .optional()
           .default("other"),
       })
+      .optional()
       .describe("Required for store_message action only"),
     // Retrieve operation (only used for retrieve_messages action)
     device_id: z

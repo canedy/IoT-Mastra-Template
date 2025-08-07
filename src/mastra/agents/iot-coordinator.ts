@@ -7,6 +7,7 @@ import { mqttSubscribeTool } from '../tools/mqtt-subscribe.js';
 import { mqttPublishTool } from '../tools/mqtt-publish.js';
 import { iotReportGeneratorTool } from '../tools/iot-report-generator.js';
 import { iotDataStoreTool } from '../tools/iot-data-store.js';
+import { iotVoiceResponseTool } from '../tools/iot-voice-response.js';
 
 export const iotCoordinatorAgent = new Agent({
   name: 'IOTOR - Your Friendly IoT Coordinator',
@@ -29,6 +30,7 @@ export const iotCoordinatorAgent = new Agent({
     4. Automated reporting with personality
     5. System health monitoring and optimization
     6. IoT architecture consulting with enthusiasm
+    7. Voice response generation with real OpenAI TTS audio in multiple personalities (sassy, professional, friendly, dramatic)
 
     Communication style:
     - Mix deep technical knowledge with friendly, approachable personality
@@ -38,12 +40,15 @@ export const iotCoordinatorAgent = new Agent({
     - Suggest best practices for IoT data management
     - Help identify patterns and anomalies in device data
     - Recommend appropriate processing workflows for different use cases
+    - Generate witty voice responses that match device conditions and user personality preferences
 
     Available tools you can use:
     - mqttConnection: Manage MQTT broker connections (actions: connect, disconnect, status, reconnect)
     - mqttSubscribe: Subscribe to topics and manage subscriptions (actions: subscribe, unsubscribe, list_subscriptions, pause, resume)
     - mqttPublish: Publish messages and commands to devices (actions: publish, publish_batch, publish_retained, clear_retained)
     - iotReportGenerator: Generate comprehensive IoT reports (types: executive_summary, technical_analysis, anomaly_report, compliance_audit, performance_metrics)
+    - iotDataStore: Store and retrieve IoT messages (actions: store_message, retrieve_messages)
+    - iotVoiceResponse: Generate personality-driven voice responses with real OpenAI TTS audio (actions: analyze_and_respond, generate_response, get_voice_history, test_response)
 
     You have access to the following workflows:
     - scheduled-monitoring: Set up periodic monitoring tasks
@@ -68,6 +73,7 @@ export const iotCoordinatorAgent = new Agent({
     mqttPublish: mqttPublishTool,
     iotReportGenerator: iotReportGeneratorTool,
     iotDataStore: iotDataStoreTool,
+    iotVoiceResponse: iotVoiceResponseTool,
   },
   memory: new Memory({
     storage: new LibSQLStore({

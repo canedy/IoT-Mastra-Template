@@ -5,17 +5,20 @@ A comprehensive, production-ready template for integrating IoT devices with the 
 ## 🎯 Unique Value Proposition
 
 This template uniquely combines:
+
 - **Real-time IoT data streaming** with MQTT protocol support
 - **AI-powered monitoring** with dynamic health score calculation
 - **Automated workflows** for scheduled monitoring and data processing
 - **Intelligent message filtering** with debug capabilities
 - **Non-blocking task execution** preventing system overload
+- **Voice response system** with personality-driven audio feedback
 
 Perfect for: Smart agriculture, industrial IoT, home automation, environmental monitoring, and any MQTT-based IoT ecosystem.
 
 ## Overview
 
 This template demonstrates:
+
 - Connecting Mastra applications to any MQTT broker (HiveMQ, AWS IoT, etc.)
 - Subscribing to and processing IoT data streams with wildcard support
 - Publishing commands back to IoT devices with QoS guarantees
@@ -32,6 +35,7 @@ This template demonstrates:
 ## Quick Start
 
 ### 1. Clone the template
+
 ```bash
 # Using this as a template (recommended)
 gh repo create my-iot-project --template mastra-iot-template
@@ -43,24 +47,28 @@ cd template-hackathon-v2
 ```
 
 ### 2. Install dependencies
+
 ```bash
 pnpm install
 # or npm install
 ```
 
 ### 3. Configure environment
+
 ```bash
 cp .env.example .env
 # Edit .env with your MQTT broker details
 ```
 
 For testing, you can use the free HiveMQ public broker:
+
 ```env
 MQTT_BROKER_URL=wss://broker.hivemq.com:8884/mqtt
 # No username/password required for public broker
 ```
 
 ### 4. Start the application
+
 ```bash
 # Development mode with hot reload
 pnpm dev
@@ -71,6 +79,7 @@ pnpm start
 ```
 
 ### 5. Access the Mastra playground
+
 Open http://localhost:4112 to interact with tools and workflows
 
 ## Configuration
@@ -96,6 +105,9 @@ MQTT_KEEP_ALIVE=60              # seconds
 MQTT_CONNECT_TIMEOUT=30000      # milliseconds
 MQTT_CLEAN_SESSION=true
 
+# OpenAI Configuration (for voice responses)
+OPENAI_API_KEY=your-openai-api-key  # Required for real TTS audio
+
 # Storage & Scheduling
 DATA_STORE_TYPE=memory           # or 'file' for persistence
 ENABLE_SCHEDULING=true           # Enable automated monitoring
@@ -105,22 +117,25 @@ AUTO_INIT=false                  # Auto-connect on startup
 ## ✨ Key Features
 
 ### 🎯 Dynamic Health Scoring
+
 The template calculates real-time health scores based on:
+
 - Connection status and stability
-- Active device count and activity  
+- Active device count and activity
 - Data quality and anomalies
 - Message processing errors
 - System resource utilization
 
 ### 📊 Automated Reporting & Analytics
+
 - Executive summaries for stakeholders
 - Technical analysis reports for engineers
 - Compliance audit documentation
 - Performance metrics with trends
 - Fun facts and insights with personality
 
-
 ### 🤖 AI Agent with Personality (IOTOR)
+
 - Enthusiastic IoT coordinator with humor
 - IoT puns and friendly error messages
 - Technical expertise with approachable communication
@@ -128,6 +143,7 @@ The template calculates real-time health scores based on:
 - Memory-enabled conversations
 
 ### 🔧 Intelligent MQTT Management
+
 - Filter messages by any JSON field with debug logging
 - Support for wildcards (+, #) in topics
 - Pause/resume subscriptions without disconnecting
@@ -139,6 +155,7 @@ The template calculates real-time health scores based on:
 ### Tools
 
 1. **MQTT Connection** (`mqtt-connection`)
+
    - Establish and manage broker connections with WebSocket and TCP support
    - **Actions:** `connect`, `disconnect`, `status`
    - **Configuration options:**
@@ -149,6 +166,7 @@ The template calculates real-time health scores based on:
    - Connection status monitoring with event logging
 
 2. **MQTT Subscribe** (`mqtt-subscribe`)
+
    - Subscribe to topics with wildcard support (+, #)
    - **Actions:** `subscribe`, `unsubscribe`, `list_subscriptions`, `pause`, `resume`
    - **Configuration options:**
@@ -159,6 +177,7 @@ The template calculates real-time health scores based on:
    - Non-blocking message storage in background
 
 3. **MQTT Publish** (`mqtt-publish`)
+
    - Publish messages with QoS support (0: at most once, 1: at least once, 2: exactly once)
    - **Actions:** `publish`, `publish_batch`, `publish_retained`, `clear_retained`
    - JSON and string message support with automatic serialization
@@ -172,6 +191,15 @@ The template calculates real-time health scores based on:
    - Performance metrics analysis
    - Export formats: Markdown, JSON, HTML, PDF-ready
 
+5. **IoT Voice Response** (`iot-voice-response`)
+   - **Actions:** `analyze_and_respond`, `generate_response`, `get_voice_history`, `clear_history`, `test_response`
+   - **Personality types:** `sassy`, `professional`, `friendly`, `dramatic`
+   - Analyzes incoming device data and generates witty audio responses
+   - Anti-spam logic prevents message overload (15-30 min intervals)
+   - Automatic severity detection (normal, warning, critical, emergency)
+   - Publishes voice responses back to MQTT topics for device playback
+   - **Real OpenAI TTS integration** with "onyx" voice for authentic audio generation (falls back to mock data if API key not provided)
+
 ### Workflows
 
 1. **IoT Monitoring Workflow** (`iotMonitoringWorkflow`)
@@ -184,6 +212,7 @@ The template calculates real-time health scores based on:
 ### Agent
 
 **IOTOR - Your Friendly IoT Coordinator** (`iotCoordinatorAgent`)
+
 - AI-powered assistant with personality and humor 🤖
 - Expert in MQTT protocols and IoT troubleshooting
 - Generates automated reports with insights and fun facts
@@ -194,195 +223,159 @@ The template calculates real-time health scores based on:
 ### Basic MQTT Connection
 
 ```javascript
-// Connect to broker with session persistence
-const result = await mastra.getTool('mqtt-connection').execute({
-  context: {
-    action: 'connect',
-    config: {
-      broker_url: 'wss://broker.hivemq.com:8884/mqtt',
-      username: 'user',
-      password: 'pass',
-      clean_session: false,  // Maintain session across reconnections
-      keep_alive: 60,        // Send ping every 60 seconds
-      reconnect: true        // Auto-reconnect if connection drops
-    }
-  }
-});
+// The MQTT tools are used by the IoT coordinator agent
+// You can interact with them through the agent in the Mastra playground
+// Example agent prompt:
+"Connect to MQTT broker and check status"
 
-// Check connection status
-const status = await mastra.getTool('mqtt-connection').execute({
-  context: { action: 'status' }
-});
+// The agent will use the mqtt-connection tool with actions:
+// - connect: Establish broker connection
+// - disconnect: Close connection
+// - status: Check current connection state
 ```
 
 ### Subscribe to Topics
 
 ```javascript
-// Subscribe with QoS and filtering
-await mastra.getTool('mqtt-subscribe').execute({
-  context: {
-    action: 'subscribe',
-    config: {
-      topics: 'sensors/+/temperature',
-      qos: '1',  // At least once delivery
-      filter: {  // Only process messages matching these criteria
-        type: 'temperature',
-        location: 'warehouse'
-      }
-    }
-  }
-});
+// Through the IoT coordinator agent:
+"Subscribe to sensors/+/temperature with QoS 1 and filter for warehouse location"
 
-// Pause subscription temporarily (messages ignored but subscription maintained)
-await mastra.getTool('mqtt-subscribe').execute({
-  context: {
-    action: 'pause',
-    topic: 'sensors/+/temperature'
-  }
-});
+// Available subscribe actions:
+// - subscribe: Subscribe to topics with wildcards
+// - unsubscribe: Remove subscription
+// - list_subscriptions: Show active subscriptions
+// - pause: Temporarily stop processing messages
+// - resume: Resume processing messages
 
-// Resume processing messages
-await mastra.getTool('mqtt-subscribe').execute({
-  context: {
-    action: 'resume',
-    topic: 'sensors/+/temperature'
-  }
-});
+// The agent handles the tool execution internally
 ```
 
 ### Publish Commands
 
 ```javascript
-// Send command to device
-await mastra.getTool('mqtt-publish').execute({
-  context: {
-    action: 'publish',
-    config: {
-      topic: 'devices/device123/commands',
-      message: { command: 'restart', timestamp: Date.now() }
-    }
-  }
-});
+// Through the IoT coordinator agent:
+"Publish a restart command to device123"
+
+// Available publish actions:
+// - publish: Send single message
+// - publish_batch: Send multiple messages
+// - publish_retained: Publish with retain flag
+// - clear_retained: Clear retained message
 ```
 
 ### Execute Monitoring Workflow
 
 ```javascript
-// Run monitoring workflow
-const workflow = mastra.getWorkflow('iotMonitoringWorkflow');
-const result = await workflow.execute({
-  check_type: 'routine_monitoring', // or 'connectivity_check', 'data_quality_check', 'daily_summary'
-  output_format: 'summary'
-});
+// The monitoring workflow runs automatically when ENABLE_SCHEDULING=true
+// Schedule:
+// - Routine: every 30 minutes
+// - Connectivity: every hour
+// - Data quality: every 2 hours  
+// - Daily summary: 8 AM daily
 
-// Scheduled monitoring runs automatically when ENABLE_SCHEDULING=true
-// - Routine: every 10 minutes
-// - Connectivity: every hour  
-// - Data quality: every 2 hours
-// - Daily summary: 8 AM
+// The workflow can be triggered through the Mastra playground
+// or will run automatically based on the schedule
 ```
 
 ## Common Patterns
 
 ### Device Telemetry Collection
-```javascript
-// Subscribe to all device telemetry with wildcards
-await mastra.getTool('mqtt-subscribe').execute({
-  context: {
-    action: 'subscribe',
-    config: {
-      topics: 'devices/+/telemetry',  // + matches any single level
-      qos: '1'
-    }
-  }
-});
 
-// Subscribe with filtering
-await mastra.getTool('mqtt-subscribe').execute({
-  context: {
-    action: 'subscribe',
-    config: {
-      topics: 'sensors/#',  // # matches multiple levels
-      filter: {
-        location: 'warehouse',
-        status: 'active'
-      }
-    }
-  }
-});
+```javascript
+// Use the IoT coordinator agent to manage subscriptions:
+
+// Example 1: Subscribe to all device telemetry
+"Subscribe to devices/+/telemetry with QoS 1"
+
+// Example 2: Subscribe with filtering
+"Subscribe to sensors/# and filter for warehouse location with active status"
+
+// The agent will handle wildcard patterns:
+// + matches any single level
+// # matches multiple levels
 ```
 
 ### Message Filtering and Monitoring
+
 ```javascript
-// Subscribe with advanced filtering - only process critical alerts
-await mastra.getTool('mqtt-subscribe').execute({
-  context: {
-    action: 'subscribe',
-    config: {
-      topics: 'alerts/#',
-      qos: '2',  // Exactly once delivery for critical alerts
-      filter: {
-        severity: 'critical',
-        acknowledged: false
-      }
-    }
-  }
-});
+// Through the IoT coordinator agent:
 
-// Pause specific subscription for maintenance
-await mastra.getTool('mqtt-subscribe').execute({
-  context: {
-    action: 'pause',
-    topic: 'sensors/+/temperature'
-  }
-});
+// Subscribe with filtering for critical alerts
+"Subscribe to alerts/# with QoS 2 and filter for critical severity that are not acknowledged"
 
-// List all active subscriptions with their status
-const subs = await mastra.getTool('mqtt-subscribe').execute({
-  context: { action: 'list_subscriptions' }
-});
-// Returns: { topic, qos, paused, has_filter } for each subscription
-console.log(subs.details.subscriptions);
+// Pause subscription for maintenance
+"Pause the subscription to sensors/+/temperature"
+
+// List active subscriptions
+"List all active MQTT subscriptions"
+// Returns: topic, qos, paused status, and filter info
 
 // Resume after maintenance
-await mastra.getTool('mqtt-subscribe').execute({
-  context: {
-    action: 'resume', 
-    topic: 'sensors/+/temperature'
-  }
-});
+"Resume the subscription to sensors/+/temperature"
 ```
 
 ### Health Monitoring & Reporting
+
 ```javascript
-// Check system health with IOTOR (your friendly AI agent)
-const agent = mastra.getAgent('iotCoordinatorAgent');
-const health = await agent.generate([{
-  role: 'user',
-  content: 'Check MQTT connection status and analyze system health'
-}]);
+// Interact with IOTOR through the Mastra playground:
 
-// Generate executive report
-const report = await mastra.getTool('iot-report-generator').execute({
-  context: {
-    report_type: 'executive_summary',
-    time_range: { preset: 'last_24h' },
-    format: 'markdown'
-  }
-});
+// Check system health
+"Check MQTT connection status and analyze system health"
 
-console.log(report.data.report);
+// Generate reports
+"Generate an executive summary report for the last 24 hours"
+
+// Available report types:
+// - executive_summary: High-level overview
+// - technical_analysis: Detailed technical report
+// - anomaly_report: Focus on anomalies
+// - compliance_audit: Compliance documentation
+// - performance_metrics: Performance analysis
+```
+
+### Voice Response System
+
+```javascript
+// Through the IoT coordinator agent:
+
+// Analyze device data and generate witty response
+"Analyze the latest data from device123 and generate a sassy voice response"
+
+// Test different personalities
+"Generate a dramatic voice response for high temperature conditions"
+"Create a friendly voice message for low battery warning"
+"Generate a professional status update for normal conditions"
+
+// The agent will:
+// 1. Analyze device conditions (temperature, humidity, battery, etc.)
+// 2. Determine severity level (normal, warning, critical, emergency)
+// 3. Generate personality-driven message
+// 4. Publish voice response to devices/{device_id}/voice topic
+// 5. Include mock audio data for demonstration
+
+// Voice responses are published to MQTT topics like:
+// devices/sensor123/voice
+// Payload structure:
+// {
+//   metadata: { transcript, severity, personality, audio_format, duration },
+//   audio_data: "base64-encoded-audio-bytes" // Mock binary audio data for demo
+// }
+// 
+// Note: audio_data contains real MP3 audio from OpenAI TTS (if API key provided)
+// Falls back to mock audio data if OPENAI_API_KEY is not set
 ```
 
 ## Supported MQTT Brokers
 
 ### Cloud Brokers
+
 - HiveMQ Cloud
 - AWS IoT Core
 - Azure IoT Hub
 - Google Cloud IoT Core
 
 ### Self-Hosted
+
 - Eclipse Mosquitto
 - EMQX
 - VerneMQ
@@ -391,24 +384,29 @@ console.log(report.data.report);
 ## Development
 
 ### Project Structure
+
 ```
 src/mastra/
 ├── index.ts                    # Main Mastra configuration
-├── tools/                      
+├── tools/
 │   ├── mqtt-connection.ts      # MQTT broker connection management
 │   ├── mqtt-subscribe.ts       # Topic subscription with filtering
 │   ├── mqtt-publish.ts         # Message publishing with QoS
-│   └── iot-report-generator.ts # Automated IoT reporting system
-├── workflows/              
+│   ├── iot-data-store.ts       # In-memory IoT message storage
+│   ├── iot-report-generator.ts # Automated IoT reporting system
+│   └── iot-voice-response.ts   # AI-powered voice responses with OpenAI TTS
+├── workflows/
 │   └── scheduled-monitoring.ts # IoT monitoring workflow with scheduling
-└── agents/                 
+└── agents/
     └── iot-coordinator.ts      # IOTOR - Friendly AI coordinator with personality
 ```
 
 ### Running Tests
+
 ```bash
-# Test MQTT connection
-pnpm test:mqtt
+# Note: test:mqtt is a placeholder script
+# To test MQTT, start the dev server and use the playground:
+pnpm dev
 
 # Type checking
 pnpm type-check
@@ -419,55 +417,44 @@ pnpm test && pnpm type-check
 
 ### Testing Your Setup
 
-1. **Test MQTT Connection:**
-```javascript
-// In Mastra playground or your code
-const result = await mastra.getTool('mqtt-connection').execute({
-  context: { action: 'status' }
-});
-console.log(result); // Should show connection status
+1. **Start the Development Server:**
+```bash
+pnpm dev
 ```
 
-2. **Test Subscribe & Publish:**
-```javascript
-// Subscribe to test topic
-await mastra.getTool('mqtt-subscribe').execute({
-  context: {
-    action: 'subscribe',
-    config: { topics: 'test/+/data' }
-  }
-});
+2. **Access Mastra Playground:**
+   Open http://localhost:4112 in your browser
 
-// Publish test message
-await mastra.getTool('mqtt-publish').execute({
-  context: {
-    action: 'publish',
-    config: {
-      topic: 'test/device1/data',
-      message: { value: 42, timestamp: Date.now() }
-    }
-  }
-});
-```
+3. **Test with the IoT Coordinator Agent:**
+   In the playground, interact with IOTOR:
+   - "Connect to MQTT broker"
+   - "Check connection status"
+   - "Subscribe to test/+/data"
+   - "Publish a test message to test/device1/data"
+   - "List all active subscriptions"
+   - "Analyze device data and generate a sassy voice response"
+   - "Test voice response with different personalities"
 
-3. **Test Scheduled Monitoring:**
-The template includes automated monitoring that runs:
-- Routine monitoring: Every 10 minutes
-- Connectivity check: Every hour
-- Data quality check: Every 2 hours
-- Daily summary: 8 AM daily
+4. **Monitor Scheduled Tasks:**
+   When ENABLE_SCHEDULING=true, automated monitoring runs:
+   - Routine monitoring: Every 30 minutes
+   - Connectivity check: Every hour
+   - Data quality check: Every 2 hours
+   - Daily summary: 8 AM daily
 
-Check logs for monitoring results showing dynamic health scores.
+   Check the console logs for monitoring execution and health scores.
 
 ## Production Deployment
 
 ### Docker
+
 ```bash
 docker build -t mastra-iot .
 docker run -p 3000:3000 --env-file .env mastra-iot
 ```
 
 ### Environment Variables for Production
+
 - Use secure credential storage
 - Enable TLS/SSL connections
 - Configure appropriate retention policies
@@ -476,11 +463,13 @@ docker run -p 3000:3000 --env-file .env mastra-iot
 ## Security Best Practices
 
 1. **Authentication**
+
    - Use strong passwords or certificates
    - Rotate credentials regularly
    - Store secrets securely
 
 2. **Encryption**
+
    - Always use TLS/SSL (wss://, mqtts://)
    - Validate server certificates
    - Encrypt sensitive message payloads
@@ -493,18 +482,21 @@ docker run -p 3000:3000 --env-file .env mastra-iot
 ## Troubleshooting
 
 ### Connection Issues
+
 - Check broker URL format and port
 - Verify credentials
 - Ensure network connectivity
 - Check firewall rules
 
 ### Message Processing
+
 - Monitor processor statistics
 - Check error logs
 - Verify topic patterns
 - Validate message formats
 
 ### Performance
+
 - Adjust batch sizes
 - Configure retention policies
 - Monitor memory usage
@@ -525,5 +517,3 @@ This template is provided under the MIT License. See LICENSE file for details.
 ## Support
 
 - Documentation: [Mastra Docs](https://docs.mastra.ai)
-- Issues: [GitHub Issues](https://github.com/mastra/templates)
-- Community: [Discord](https://discord.gg/mastra)

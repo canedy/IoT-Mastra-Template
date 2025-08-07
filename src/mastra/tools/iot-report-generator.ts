@@ -1,7 +1,7 @@
 import { createTool } from '@mastra/core/tools';
 import { z } from 'zod';
 import { getMqttClient } from './mqtt-connection.js';
-import { iotDataStoreTool } from './iot-data-store.js';
+import { getStoredMessages } from './iot-data-store.js';
 
 interface DeviceMetrics {
   deviceId: string;
@@ -72,17 +72,12 @@ export const iotReportGeneratorTool = createTool({
     const client = getMqttClient();
     const connectionStatus = client?.connected ? 'Connected' : 'Disconnected';
     
-    // Retrieve actual messages from data store
-    const messagesResult = await iotDataStoreTool.execute({
-      context: {
-        action: 'retrieve_messages',
-        limit: 1000 // Get more messages for analysis
-      }
-    });
+    // Retrieve actual messages from data store using helper function
+    const storedMessages = getStoredMessages('', 1000); // Get all messages, limit 1000
 
     let mockDevices, totalMessages, totalErrors, errorRate, onlineDevices;
     
-    if (!messagesResult.success || !messagesResult.data || messagesResult.data.length === 0) {
+    if (!storedMessages || storedMessages.length === 0) {
       // Fallback to mock data if no real data available
       mockDevices = [
         { id: 'no-data', status: 'unknown', messages: 0, errors: 0 }
@@ -93,7 +88,7 @@ export const iotReportGeneratorTool = createTool({
       onlineDevices = 0;
     } else {
       // Analyze real data
-      const messages = messagesResult.data as any[];
+      const messages = storedMessages;
       const deviceStats = new Map<string, { messages: number, errors: number, lastSeen: Date }>();
       
       // Process messages to calculate device statistics
@@ -147,8 +142,8 @@ export const iotReportGeneratorTool = createTool({
         summary = `IoT system operating at ${95 - parseFloat(errorRate)}% efficiency with ${onlineDevices}/${mockDevices.length} devices online`;
         
         if (format === 'markdown') {
-          const dataSource = messagesResult.success && messagesResult.data && messagesResult.data.length > 0 ? 
-            `Real-time data (${messagesResult.data.length} messages analyzed)` : 
+          const dataSource = storedMessages && storedMessages.length > 0 ? 
+            `Real-time data (${storedMessages.length} messages analyzed)` : 
             'No live data - using fallback';
             
           report = `# 📊 IoT System Executive Summary
