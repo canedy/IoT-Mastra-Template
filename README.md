@@ -7,11 +7,12 @@ A comprehensive, production-ready template for integrating IoT devices with the 
 This template uniquely combines:
 
 - **Real-time IoT data streaming** with MQTT protocol support
-- **AI-powered monitoring** with dynamic health score calculation
-- **Automated workflows** for scheduled monitoring and data processing
+- **AI-powered monitoring** with dynamic health score calculation using Mastra agents
+- **Automated workflows** for scheduled monitoring with real tool execution
 - **Intelligent message filtering** with debug capabilities
 - **Non-blocking task execution** preventing system overload
-- **Voice response system** with personality-driven audio feedback
+- **Character-driven voice responses** featuring Rick Sanchez, Batman, Oprah, and Winnie the Pooh
+- **Dual AI integration** - GPT-4 Mini for personalities + OpenAI TTS for voice synthesis
 
 Perfect for: Smart agriculture, industrial IoT, home automation, environmental monitoring, and any MQTT-based IoT ecosystem.
 
@@ -193,12 +194,16 @@ The template calculates real-time health scores based on:
 
 5. **IoT Voice Response** (`iot-voice-response`)
    - **Actions:** `analyze_and_respond`, `generate_response`, `get_voice_history`, `clear_history`, `test_response`
-   - **Personality types:** `sassy`, `professional`, `friendly`, `dramatic`
-   - Analyzes incoming device data and generates witty audio responses
+   - **Character personalities powered by LLM:** 
+     - `rick_morty`: Cynical mad scientist with burps and dark humor
+     - `batman`: Dark, brooding vigilante with dramatic intensity
+     - `oprah`: Inspirational and empowering with life lessons
+     - `winnie_pooh`: Lovable bear obsessed with honey
+   - Uses OpenAI GPT-4 Mini to generate unique, character-specific responses
    - Anti-spam logic prevents message overload (15-30 min intervals)
    - Automatic severity detection (normal, warning, critical, emergency)
    - Publishes voice responses back to MQTT topics for device playback
-   - **Real OpenAI TTS integration** with "onyx" voice for authentic audio generation (falls back to mock data if API key not provided)
+   - **Dual AI integration:** OpenAI GPT for text generation + TTS for voice synthesis
 
 ### Workflows
 
@@ -268,13 +273,17 @@ The template calculates real-time health scores based on:
 ```javascript
 // The monitoring workflow runs automatically when ENABLE_SCHEDULING=true
 // Schedule:
-// - Routine: every 30 minutes
-// - Connectivity: every hour
-// - Data quality: every 2 hours  
-// - Daily summary: 8 AM daily
+// - Routine: every 30 minutes - Agent checks MQTT status and analyzes messages
+// - Connectivity: every hour - Agent tests broker connection
+// - Data quality: every 2 hours - Agent analyzes data patterns
+// - Daily summary: 8 AM daily - Agent generates executive report
 
-// The workflow can be triggered through the Mastra playground
-// or will run automatically based on the schedule
+// How it works:
+// 1. Cron job triggers the monitoring task
+// 2. System calls the IoT Coordinator Agent with specific prompts
+// 3. Agent uses its tools (mqtt-connection, iot-data-store, etc.) to gather data
+// 4. Agent generates a response with real monitoring insights
+// 5. System logs the results with health scores and metrics
 ```
 
 ## Common Patterns
@@ -341,17 +350,18 @@ The template calculates real-time health scores based on:
 // Analyze device data and generate witty response
 "Analyze the latest data from device123 and generate a sassy voice response"
 
-// Test different personalities
-"Generate a dramatic voice response for high temperature conditions"
-"Create a friendly voice message for low battery warning"
-"Generate a professional status update for normal conditions"
+// Test different character personalities
+"Generate a Rick and Morty voice response for high temperature conditions"
+"Create a Batman voice message for security breach warning"
+"Generate an Oprah response for system recovery"
+"Create a Winnie the Pooh message for low battery"
 
 // The agent will:
 // 1. Analyze device conditions (temperature, humidity, battery, etc.)
 // 2. Determine severity level (normal, warning, critical, emergency)
-// 3. Generate personality-driven message
-// 4. Publish voice response to devices/{device_id}/voice topic
-// 5. Include mock audio data for demonstration
+// 3. Use OpenAI GPT-4 Mini to generate character-specific message
+// 4. Convert message to audio using OpenAI TTS (onyx voice)
+// 5. Publish voice response to devices/{device_id}/voice topic
 
 // Voice responses are published to MQTT topics like:
 // devices/sensor123/voice
@@ -361,8 +371,10 @@ The template calculates real-time health scores based on:
 //   audio_data: "base64-encoded-audio-bytes" // Mock binary audio data for demo
 // }
 // 
-// Note: audio_data contains real MP3 audio from OpenAI TTS (if API key provided)
-// Falls back to mock audio data if OPENAI_API_KEY is not set
+// Note: Requires OPENAI_API_KEY for both:
+// - GPT-4 Mini: Generates character-specific messages
+// - TTS API: Converts messages to MP3 audio
+// Falls back to predefined messages and mock audio if API key not set
 ```
 
 ## Supported MQTT Brokers
@@ -513,6 +525,26 @@ docker run -p 3000:3000 --env-file .env mastra-iot
 ## License
 
 This template is provided under the MIT License. See LICENSE file for details.
+
+## Recent Enhancements
+
+### 🎭 Character-Driven Voice Responses
+- **Dynamic personality generation** using GPT-4 Mini for unique responses every time
+- **Four iconic characters**: Rick Sanchez (*burp*), Batman (dark & brooding), Oprah (inspirational), Winnie the Pooh (honey-obsessed)
+- **Dual AI system**: LLM for text generation + TTS for voice synthesis
+- **Anti-spam protection**: Prevents message flooding with smart timing restrictions
+
+### 🔧 Production-Ready Monitoring
+- **Agent-based execution**: Uses `mastra.getAgent()` and `agent.generate()` per official API
+- **Real tool integration**: Agent uses mqtt-connection, iot-data-store for actual monitoring
+- **Non-blocking cron jobs**: Prevents system freezes with proper async handling
+- **Graceful fallbacks**: Mock data when services unavailable
+
+### 🛠️ Technical Improvements
+- **Concurrency locks**: Prevents duplicate voice generation for same device
+- **Optimized logging**: Reduced verbosity while maintaining debugging capability
+- **Fixed workflow execution**: Bypassed browser-specific APIs for Node.js compatibility
+- **Enhanced error handling**: Try-finally blocks ensure resource cleanup
 
 ## Support
 

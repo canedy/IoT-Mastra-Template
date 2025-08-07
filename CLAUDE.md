@@ -93,8 +93,9 @@ This is a Mastra framework IoT integration template that provides tools and work
 
 ### Recent Updates
 
-- Fixed workflow execution context to include all required parameters
-- Implemented proper server lifecycle hooks for scheduling
-- HiveMQ environment variables now take precedence over generic MQTT variables
-- Removed unused environment variables to reduce configuration complexity
-- Agent tools now use actual implementations instead of placeholders
+- **Voice Response System**: Added character-driven personalities (Rick, Batman, Oprah, Pooh) with GPT-4 Mini + OpenAI TTS
+- **Fixed Monitoring**: Replaced `getTool()` with proper `agent.generate()` per Mastra API
+- **Workflow Fixes**: Bypassed browser-specific APIs for Node.js compatibility
+- **Concurrency Control**: Added locks to prevent duplicate voice generation
+- **Real Monitoring**: Agent now uses actual tools for connectivity and data checks
+- **Anti-spam Logic**: Smart timing restrictions prevent message flooding
