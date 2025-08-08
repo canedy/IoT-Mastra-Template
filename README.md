@@ -39,12 +39,8 @@ This template demonstrates:
 
 ```bash
 # Using this as a template (recommended)
-gh repo create my-iot-project --template mastra-iot-template
-cd my-iot-project
-
-# Or clone directly
-git clone <repository-url>
-cd template-hackathon-v2
+git clone https://github.com/canedy/IoT-Mastra-Template.git
+cd IoT-Mastra-Template
 ```
 
 ### 2. Install dependencies
@@ -186,6 +182,7 @@ The template calculates real-time health scores based on:
    - Batch publishing for efficient bulk operations
 
 4. **IoT Report Generator** (`iot-report-generator`)
+
    - Automated executive summaries and technical reports
    - Anomaly detection reports with recommendations
    - Compliance audit documentation
@@ -194,7 +191,7 @@ The template calculates real-time health scores based on:
 
 5. **IoT Voice Response** (`iot-voice-response`)
    - **Actions:** `analyze_and_respond`, `generate_response`, `get_voice_history`, `clear_history`, `test_response`
-   - **Character personalities powered by LLM:** 
+   - **Character personalities powered by LLM:**
      - `rick_morty`: Cynical mad scientist with burps and dark humor
      - `batman`: Dark, brooding vigilante with dramatic intensity
      - `oprah`: Inspirational and empowering with life lessons
@@ -231,7 +228,7 @@ The template calculates real-time health scores based on:
 // The MQTT tools are used by the IoT coordinator agent
 // You can interact with them through the agent in the Mastra playground
 // Example agent prompt:
-"Connect to MQTT broker and check status"
+"Connect to MQTT broker and check status";
 
 // The agent will use the mqtt-connection tool with actions:
 // - connect: Establish broker connection
@@ -243,7 +240,7 @@ The template calculates real-time health scores based on:
 
 ```javascript
 // Through the IoT coordinator agent:
-"Subscribe to sensors/+/temperature with QoS 1 and filter for warehouse location"
+"Subscribe to sensors/+/temperature with QoS 1 and filter for warehouse location";
 
 // Available subscribe actions:
 // - subscribe: Subscribe to topics with wildcards
@@ -259,7 +256,7 @@ The template calculates real-time health scores based on:
 
 ```javascript
 // Through the IoT coordinator agent:
-"Publish a restart command to device123"
+"Publish a restart command to device123";
 
 // Available publish actions:
 // - publish: Send single message
@@ -294,10 +291,10 @@ The template calculates real-time health scores based on:
 // Use the IoT coordinator agent to manage subscriptions:
 
 // Example 1: Subscribe to all device telemetry
-"Subscribe to devices/+/telemetry with QoS 1"
+"Subscribe to devices/+/telemetry with QoS 1";
 
 // Example 2: Subscribe with filtering
-"Subscribe to sensors/# and filter for warehouse location with active status"
+"Subscribe to sensors/# and filter for warehouse location with active status";
 
 // The agent will handle wildcard patterns:
 // + matches any single level
@@ -310,17 +307,17 @@ The template calculates real-time health scores based on:
 // Through the IoT coordinator agent:
 
 // Subscribe with filtering for critical alerts
-"Subscribe to alerts/# with QoS 2 and filter for critical severity that are not acknowledged"
+"Subscribe to alerts/# with QoS 2 and filter for critical severity that are not acknowledged";
 
 // Pause subscription for maintenance
-"Pause the subscription to sensors/+/temperature"
+"Pause the subscription to sensors/+/temperature";
 
 // List active subscriptions
-"List all active MQTT subscriptions"
+"List all active MQTT subscriptions";
 // Returns: topic, qos, paused status, and filter info
 
 // Resume after maintenance
-"Resume the subscription to sensors/+/temperature"
+"Resume the subscription to sensors/+/temperature";
 ```
 
 ### Health Monitoring & Reporting
@@ -329,10 +326,10 @@ The template calculates real-time health scores based on:
 // Interact with IOTOR through the Mastra playground:
 
 // Check system health
-"Check MQTT connection status and analyze system health"
+"Check MQTT connection status and analyze system health";
 
 // Generate reports
-"Generate an executive summary report for the last 24 hours"
+"Generate an executive summary report for the last 24 hours";
 
 // Available report types:
 // - executive_summary: High-level overview
@@ -348,13 +345,13 @@ The template calculates real-time health scores based on:
 // Through the IoT coordinator agent:
 
 // Analyze device data and generate witty response
-"Analyze the latest data from device123 and generate a sassy voice response"
+"Analyze the latest data from device123 and generate a sassy voice response";
 
 // Test different character personalities
-"Generate a Rick and Morty voice response for high temperature conditions"
-"Create a Batman voice message for security breach warning"
-"Generate an Oprah response for system recovery"
-"Create a Winnie the Pooh message for low battery"
+"Generate a Rick and Morty voice response for high temperature conditions";
+"Create a Batman voice message for security breach warning";
+"Generate an Oprah response for system recovery";
+"Create a Winnie the Pooh message for low battery";
 
 // The agent will:
 // 1. Analyze device conditions (temperature, humidity, battery, etc.)
@@ -370,7 +367,7 @@ The template calculates real-time health scores based on:
 //   metadata: { transcript, severity, personality, audio_format, duration },
 //   audio_data: "base64-encoded-audio-bytes" // Mock binary audio data for demo
 // }
-// 
+//
 // Note: Requires OPENAI_API_KEY for both:
 // - GPT-4 Mini: Generates character-specific messages
 // - TTS API: Converts messages to MP3 audio
@@ -430,6 +427,7 @@ pnpm test && pnpm type-check
 ### Testing Your Setup
 
 1. **Start the Development Server:**
+
 ```bash
 pnpm dev
 ```
@@ -439,6 +437,7 @@ pnpm dev
 
 3. **Test with the IoT Coordinator Agent:**
    In the playground, interact with IOTOR:
+
    - "Connect to MQTT broker"
    - "Check connection status"
    - "Subscribe to test/+/data"
@@ -449,6 +448,7 @@ pnpm dev
 
 4. **Monitor Scheduled Tasks:**
    When ENABLE_SCHEDULING=true, automated monitoring runs:
+
    - Routine monitoring: Every 30 minutes
    - Connectivity check: Every hour
    - Data quality check: Every 2 hours
@@ -529,18 +529,21 @@ This template is provided under the MIT License. See LICENSE file for details.
 ## Recent Enhancements
 
 ### 🎭 Character-Driven Voice Responses
+
 - **Dynamic personality generation** using GPT-4 Mini for unique responses every time
-- **Four iconic characters**: Rick Sanchez (*burp*), Batman (dark & brooding), Oprah (inspirational), Winnie the Pooh (honey-obsessed)
+- **Four iconic characters**: Rick Sanchez (_burp_), Batman (dark & brooding), Oprah (inspirational), Winnie the Pooh (honey-obsessed)
 - **Dual AI system**: LLM for text generation + TTS for voice synthesis
 - **Anti-spam protection**: Prevents message flooding with smart timing restrictions
 
 ### 🔧 Production-Ready Monitoring
+
 - **Agent-based execution**: Uses `mastra.getAgent()` and `agent.generate()` per official API
 - **Real tool integration**: Agent uses mqtt-connection, iot-data-store for actual monitoring
 - **Non-blocking cron jobs**: Prevents system freezes with proper async handling
 - **Graceful fallbacks**: Mock data when services unavailable
 
 ### 🛠️ Technical Improvements
+
 - **Concurrency locks**: Prevents duplicate voice generation for same device
 - **Optimized logging**: Reduced verbosity while maintaining debugging capability
 - **Fixed workflow execution**: Bypassed browser-specific APIs for Node.js compatibility
