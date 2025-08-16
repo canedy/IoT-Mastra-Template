@@ -4,9 +4,8 @@ This file provides guidance to Claude Code (claude.ai/code) when working with co
 
 ## Commands
 
-Build and run the application:
 ```bash
-# Development mode with hot reload
+# Development mode with Mastra playground
 pnpm dev
 
 # Build for production
@@ -18,84 +17,68 @@ pnpm start
 # Test MQTT connection
 pnpm test:mqtt
 
-# Type checking
-pnpm type-check
+# Type checking (no built-in script, use TypeScript directly)
+npx tsc --noEmit
 ```
 
 ## Architecture
 
-This is a Mastra framework IoT integration template that provides tools and workflows for connecting to MQTT brokers and processing IoT data streams.
+Chicken Coop IoT system built on Mastra framework for managing chicken coop environmental monitoring and control via MQTT.
 
-### Core Components
+### Core Structure
 
-1. **Mastra Instance** (`src/mastra/index.ts`): Central configuration that orchestrates all IoT tools, workflows, and agents. Includes auto-initialization logic for MQTT connections and scheduled tasks.
+**Mastra Configuration** (`src/mastra/index.ts`): Central orchestration hub defining agents and storage configuration.
 
-2. **MQTT Tools** (`src/mastra/tools/`):
-   - **mqtt-connection.ts**: Manages MQTT broker connections with automatic reconnection
-   - **mqtt-subscribe.ts**: Handles topic subscriptions with wildcard support and message filtering
-   - **mqtt-publish.ts**: Publishes messages with QoS support and offline queuing
-   - **data-store.ts**: Stores IoT data with retention policies and indexing
-   - **message-processor.ts**: Configurable message processing pipeline
+**Chicken Coop Agent** (`src/mastra/agents/chicken-coop-agent.ts`): Production-ready AI agent with GPT-4o-mini that manages coop operations including temperature monitoring, feeding schedules, environmental controls, and human-in-the-loop approvals.
 
-3. **Workflows** (`src/mastra/workflows/`):
-   - **scheduled-monitoring.ts**: Periodic monitoring with cron scheduling, metrics calculation, and alerting
-   - **data-processing.ts**: Batch processing workflows for aggregation, transformation, and filtering
+### Tool Categories
 
-4. **IoT Coordinator Agent** (`src/mastra/agents/iot-coordinator.ts`): AI-powered assistant for IoT system management and troubleshooting
+**MQTT Tools** (`src/mastra/tools/mqtt/`):
+- `mqtt-connection.ts`: Broker connection management with HiveMQ support
+- `mqtt-subscribe.ts`: Topic subscription with auto-memory storage
+- `mqtt-publish.ts`: Message publishing with QoS levels
+- `mqtt-memory-bridge.ts`: Bridges MQTT data to shared memory
+
+**Chicken Coop Tools** (`src/mastra/tools/chicken-coop/`):
+- `coop-temp-alert.ts`: Temperature monitoring (35-95°F safe range)
+- `feed-schedule.ts`: 12-hour feeding schedule management
+- `feeder-control.ts`: IoT feeder control via MQTT commands
+- `coop-controls.ts`: Environmental controls (ventilation, water, awning)
+
+**Utility Tools** (`src/mastra/tools/utils/`):
+- `shared-memory-tool.ts`: Cross-thread sensor data access
+- `approval-request.ts`: Human-in-the-loop approval system
+- `log-event.ts`: Event logging with severity levels
 
 ### Key Patterns
 
-- **Tool Creation**: All tools use `createTool` with Zod schemas for validation
-- **MQTT Patterns**: Support for wildcards (+, #) in topic subscriptions
-- **Data Management**: In-memory storage with configurable retention and indexing
-- **Error Handling**: Graceful degradation with offline queuing and reconnection
-- **Scheduling**: Cron-based workflows with timezone support
+- **Tool Structure**: All tools use `createTool` with Zod schemas
+- **Memory Integration**: Agent uses LibSQL for persistent memory storage
+- **MQTT Topics**: Standard IoT pattern `sensors/coop/{type}` for data ingestion
+- **Human Approval**: Critical actions require explicit user confirmation
+- **Environmental Response**: Temperature-based automatic control recommendations
 
-### Configuration
+### Environment Configuration
 
-- **Environment Variables**: All configuration via .env file (see .env.example)
-- **MQTT Settings**: Broker URL, credentials, QoS, keep-alive settings
-- **Data Retention**: Configurable per-device limits and time-based cleanup
-- **Scheduling**: Enable/disable with ENABLE_SCHEDULING flag
+Required `.env` variables:
+- `HIVEMQ_BROKER_URL`: HiveMQ cloud broker URL (wss://...)
+- `HIVEMQ_USERNAME`: HiveMQ authentication username
+- `HIVEMQ_PASSWORD`: HiveMQ authentication password
+- `OPENAI_API_KEY`: Optional for voice features
+- `ENABLE_SCHEDULING`: Enable/disable automated monitoring
 
-### External Dependencies
+### Testing Flow
 
-- **MQTT Library**: mqtt@^5.14.0 for broker communication
-- **Scheduling**: node-cron@^3.0.3 for workflow scheduling
-- **Validation**: zod@^3.25.76 for runtime type checking
+1. Start Mastra playground: `pnpm dev`
+2. Connect to MQTT broker via playground UI
+3. Subscribe to `sensors/coop/temp`
+4. Publish test data via HiveMQ console
+5. Interact with Chicken Coop Manager agent
 
-### Message Flow
+### Agent Capabilities
 
-1. MQTT messages arrive via subscriptions
-2. Message processors filter and transform data
-3. Processed data stored with retention policies
-4. Workflows analyze and aggregate data periodically
-5. Results published back to MQTT or stored
-
-### Best Practices
-
-- Always check MQTT connection status before operations
-- Use appropriate QoS levels for reliability vs performance
-- Implement message deduplication for QoS > 0
-- Monitor memory usage with large data volumes
-- Use topic hierarchies for efficient routing
-
-### Server Lifecycle & Scheduling
-
-- **Server Hooks** (`src/mastra/server.ts`): Manages startup/shutdown lifecycle
-- **Scheduled Monitoring**: Runs automatically when `ENABLE_SCHEDULING=true`
-  - Routine monitoring: Every 30 minutes
-  - Connectivity check: Every hour
-  - Data quality check: Every 2 hours
-  - Daily summary: 8 AM daily
-- **Auto-initialization**: MQTT connection and subscriptions on server start
-- **Graceful Shutdown**: Stops all scheduled tasks and closes MQTT connections
-
-### Recent Updates
-
-- **Voice Response System**: Added character-driven personalities (Rick, Batman, Oprah, Pooh) with GPT-4 Mini + OpenAI TTS
-- **Fixed Monitoring**: Replaced `getTool()` with proper `agent.generate()` per Mastra API
-- **Workflow Fixes**: Bypassed browser-specific APIs for Node.js compatibility
-- **Concurrency Control**: Added locks to prevent duplicate voice generation
-- **Real Monitoring**: Agent now uses actual tools for connectivity and data checks
-- **Anti-spam Logic**: Smart timing restrictions prevent message flooding
+- **Temperature Monitoring**: Real-time alerts for unsafe conditions
+- **Feeding Management**: Schedule tracking with approval for unusual intervals
+- **Environmental Control**: Automated recommendations for ventilation, water, shade
+- **Memory Persistence**: Historical data tracking for pattern detection
+- **Human-in-the-Loop**: Approval requests for critical actions

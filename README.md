@@ -1,53 +1,44 @@
-# IoT Integration Template for Mastra
+# MQTT-Mastra Integration Template
 
-A comprehensive, production-ready template for integrating IoT devices with the Mastra AI framework through MQTT brokers. This template provides foundational tools, workflows, and an AI-powered coordinator agent that developers can customize for their specific IoT use cases.
+A production-ready template showcasing seamless MQTT integration with Mastra AI agents and tools. This template demonstrates how to build intelligent IoT systems that combine real-time MQTT messaging with AI-powered decision making.
 
-## 🎯 Unique Value Proposition
+## 🎯 Key Integration Features
 
-This template uniquely combines:
+### MQTT + AI Agent Integration
+- 📡 **Real-time MQTT Communication**: Bi-directional messaging with any MQTT broker
+- 🤖 **AI-Powered Processing**: Intelligent agents that respond to IoT data streams
+- 🔄 **Auto-Memory Bridge**: Automatic storage of MQTT messages in agent memory
+- 🛠️ **Modular Tool System**: Reusable MQTT tools for any IoT use case
+- 💾 **Persistent Memory**: SQLite-backed memory for historical data analysis
+- 👤 **Human-in-the-Loop**: Approval workflows for critical IoT actions
 
-- **Real-time IoT data streaming** with MQTT protocol support
-- **AI-powered monitoring** with dynamic health score calculation using Mastra agents
-- **Automated workflows** for scheduled monitoring with real tool execution
-- **Intelligent message filtering** with debug capabilities
-- **Non-blocking task execution** preventing system overload
-- **Character-driven voice responses** featuring Rick Sanchez, Batman, Oprah, and Winnie the Pooh
-- **Dual AI integration** - GPT-4 Mini for personalities + OpenAI TTS for voice synthesis
-
-Perfect for: Smart agriculture, industrial IoT, home automation, environmental monitoring, and any MQTT-based IoT ecosystem.
-
-## Overview
-
-This template demonstrates:
-
-- Connecting Mastra applications to any MQTT broker (HiveMQ, AWS IoT, etc.)
-- Subscribing to and processing IoT data streams with wildcard support
-- Publishing commands back to IoT devices with QoS guarantees
-- Implementing scheduled workflows for automated monitoring
-- Managing IoT data with configurable retention policies
-- AI-powered health monitoring with dynamic scoring
+### Technical Capabilities
+- **MQTT Protocol Support**: Full MQTT 3.1.1/5.0 with QoS levels
+- **Topic Wildcards**: Support for `+` and `#` wildcards in subscriptions
+- **Connection Management**: Auto-reconnect with exponential backoff
+- **Message Bridge**: Automatic MQTT → Agent memory synchronization
+- **Tool Composition**: Chain multiple tools for complex IoT workflows
 
 ## Prerequisites
 
 - Node.js >= 20.9.0
-- pnpm (recommended) or npm
-- Access to an MQTT broker (cloud or self-hosted)
+- pnpm package manager
+- MQTT Broker (HiveMQ Cloud recommended - free tier available)
+- OpenAI API key (for AI agent functionality)
 
 ## Quick Start
 
 ### 1. Clone the template
 
 ```bash
-# Using this as a template (recommended)
-git clone https://github.com/canedy/IoT-Mastra-Template.git
-cd IoT-Mastra-Template
+git clone <your-repo-url>
+cd mqtt-mastra-template
 ```
 
 ### 2. Install dependencies
 
 ```bash
 pnpm install
-# or npm install
 ```
 
 ### 3. Configure environment
@@ -57,498 +48,300 @@ cp .env.example .env
 # Edit .env with your MQTT broker details
 ```
 
-For testing, you can use the free HiveMQ public broker:
+## Environment Requirements
 
-```env
-MQTT_BROKER_URL=wss://broker.hivemq.com:8884/mqtt
-# No username/password required for public broker
+Create a `.env` file based on `.env.example`:
+
+```
+# OpenAI API Key (optional, for voice features)
+OPENAI_API_KEY=your-openai-api-key
+
+# =============================================================================
+# MQTT BROKER CONFIGURATION
+# =============================================================================
+
+HIVEMQ_BROKER_URL=your_hivemq_url
+HIVEMQ_USERNAME=your_username
+HIVEMQ_PASSWORD=your_password
 ```
 
 ### 4. Start the application
 
-```bash
-# Development mode with hot reload
-pnpm dev
+1. Start Mastra playground: `pnpm run dev`
+2. Open browser to playground URL
+3. Login to HiveMQ to simulate the IOT device messages
 
-# Production build
-pnpm build
-pnpm start
+## MQTT Integration Architecture
+
+### How It Works
+
+1. **MQTT Messages** arrive via broker subscriptions
+2. **Memory Bridge** automatically stores messages in shared memory
+3. **AI Agent** processes data using specialized tools
+4. **Actions** are executed via MQTT publish commands
+5. **Human Approval** required for critical operations
+
+### Example: Chicken Coop IoT Demo
+
+The template includes a fully-functional chicken coop management system demonstrating:
+- Temperature monitoring with safety thresholds
+- Automated feeding schedules
+- Environmental control systems
+- Pattern detection from historical data
+
+### MQTT Tool Showcase
+
+#### Connection Management
+```javascript
+// Automatic connection with retry logic
+await mqttConnectionTool.execute({ 
+  action: 'connect',
+  broker: process.env.HIVEMQ_BROKER_URL 
+});
 ```
 
-### 5. Access the Mastra playground
+#### Subscribe with Memory Bridge
+```javascript
+// Messages automatically stored in agent memory
+await mqttSubscribeTool.execute({ 
+  topic: 'sensors/+/temperature',
+  qos: 1 
+});
+```
 
-Open http://localhost:4112 to interact with tools and workflows
+#### Intelligent Processing
+```javascript
+// Agent analyzes MQTT data and takes action
+if (temperature > threshold) {
+  await agent.execute('Activate cooling systems');
+}
+```
 
-## Configuration
+## Getting Started with MQTT Integration
 
-### Environment Variables
+### Step 1: Configure Your MQTT Broker
 
-Create a `.env` file based on `.env.example`:
-
-```env
-# HiveMQ Cloud (takes precedence if set)
+Set up your MQTT connection in `.env`:
+```bash
 HIVEMQ_BROKER_URL=wss://your-cluster.hivemq.cloud:8884/mqtt
-HIVEMQ_USERNAME=your-hivemq-username
-HIVEMQ_PASSWORD=your-hivemq-password
-
-# Alternative MQTT Broker (fallback)
-MQTT_BROKER_URL=wss://broker.hivemq.com:8884/mqtt
-MQTT_USERNAME=your-username
-MQTT_PASSWORD=your-password
-
-# Connection Settings
-MQTT_CLIENT_ID=mastra-iot-template
-MQTT_KEEP_ALIVE=60              # seconds
-MQTT_CONNECT_TIMEOUT=30000      # milliseconds
-MQTT_CLEAN_SESSION=true
-
-# OpenAI Configuration (for voice responses)
-OPENAI_API_KEY=your-openai-api-key  # Required for real TTS audio
-
-# Storage & Scheduling
-DATA_STORE_TYPE=memory           # or 'file' for persistence
-ENABLE_SCHEDULING=true           # Enable automated monitoring
-AUTO_INIT=false                  # Auto-connect on startup
+HIVEMQ_USERNAME=your-username
+HIVEMQ_PASSWORD=your-password
 ```
 
-## ✨ Key Features
-
-### 🎯 Dynamic Health Scoring
-
-The template calculates real-time health scores based on:
-
-- Connection status and stability
-- Active device count and activity
-- Data quality and anomalies
-- Message processing errors
-- System resource utilization
-
-### 📊 Automated Reporting & Analytics
-
-- Executive summaries for stakeholders
-- Technical analysis reports for engineers
-- Compliance audit documentation
-- Performance metrics with trends
-- Fun facts and insights with personality
-
-### 🤖 AI Agent with Personality (IOTOR)
-
-- Enthusiastic IoT coordinator with humor
-- IoT puns and friendly error messages
-- Technical expertise with approachable communication
-- Comprehensive tool integration
-- Memory-enabled conversations
-
-### 🔧 Intelligent MQTT Management
-
-- Filter messages by any JSON field with debug logging
-- Support for wildcards (+, #) in topics
-- Pause/resume subscriptions without disconnecting
-- Non-blocking scheduled tasks preventing cron warnings
-- Production-ready error handling with automatic reconnection
-
-## Core Components
-
-### Tools
-
-1. **MQTT Connection** (`mqtt-connection`)
-
-   - Establish and manage broker connections with WebSocket and TCP support
-   - **Actions:** `connect`, `disconnect`, `status`
-   - **Configuration options:**
-     - `clean_session`: Controls session persistence (default: true). When false, broker maintains subscriptions and queued messages during disconnections
-     - `keep_alive`: Ping interval in seconds to maintain connection (default: 60)
-     - `reconnect`: Enable automatic reconnection on connection loss (default: true)
-   - Automatic reconnection with configurable timeout handling
-   - Connection status monitoring with event logging
-
-2. **MQTT Subscribe** (`mqtt-subscribe`)
-
-   - Subscribe to topics with wildcard support (+, #)
-   - **Actions:** `subscribe`, `unsubscribe`, `list_subscriptions`, `pause`, `resume`
-   - **Configuration options:**
-     - `qos`: Quality of Service level (0, 1, or 2) - controls message delivery guarantees
-     - `filter`: JSON object for message filtering - only processes messages matching all specified field values
-   - **Pause/Resume:** Temporarily stop processing messages without unsubscribing (useful for debugging)
-   - Debug logging shows filtered-out messages with reasons
-   - Non-blocking message storage in background
-
-3. **MQTT Publish** (`mqtt-publish`)
-
-   - Publish messages with QoS support (0: at most once, 1: at least once, 2: exactly once)
-   - **Actions:** `publish`, `publish_batch`, `publish_retained`, `clear_retained`
-   - JSON and string message support with automatic serialization
-   - Topic validation and error handling
-   - Batch publishing for efficient bulk operations
-
-4. **IoT Report Generator** (`iot-report-generator`)
-
-   - Automated executive summaries and technical reports
-   - Anomaly detection reports with recommendations
-   - Compliance audit documentation
-   - Performance metrics analysis
-   - Export formats: Markdown, JSON, HTML, PDF-ready
-
-5. **IoT Voice Response** (`iot-voice-response`)
-   - **Actions:** `analyze_and_respond`, `generate_response`, `get_voice_history`, `clear_history`, `test_response`
-   - **Character personalities powered by LLM:**
-     - `rick_morty`: Cynical mad scientist with burps and dark humor
-     - `batman`: Dark, brooding vigilante with dramatic intensity
-     - `oprah`: Inspirational and empowering with life lessons
-     - `winnie_pooh`: Lovable bear obsessed with honey
-   - Uses OpenAI GPT-4 Mini to generate unique, character-specific responses
-   - Anti-spam logic prevents message overload (15-30 min intervals)
-   - Automatic severity detection (normal, warning, critical, emergency)
-   - Publishes voice responses back to MQTT topics for device playback
-   - **Dual AI integration:** OpenAI GPT for text generation + TTS for voice synthesis
-
-### Workflows
-
-1. **IoT Monitoring Workflow** (`iotMonitoringWorkflow`)
-   - Four monitoring types: routine, connectivity, data quality, daily summary
-   - Dynamic health score calculation (0-100)
-   - Issue detection and recommendations
-   - Automated scheduling with non-blocking execution
-   - Configurable via environment variables
-
-### Agent
-
-**IOTOR - Your Friendly IoT Coordinator** (`iotCoordinatorAgent`)
-
-- AI-powered assistant with personality and humor 🤖
-- Expert in MQTT protocols and IoT troubleshooting
-- Generates automated reports with insights and fun facts
-- Provides recommendations with enthusiasm and IoT puns
-
-## Usage Examples
-
-### Basic MQTT Connection
-
-```javascript
-// The MQTT tools are used by the IoT coordinator agent
-// You can interact with them through the agent in the Mastra playground
-// Example agent prompt:
-"Connect to MQTT broker and check status";
-
-// The agent will use the mqtt-connection tool with actions:
-// - connect: Establish broker connection
-// - disconnect: Close connection
-// - status: Check current connection state
-```
-
-### Subscribe to Topics
-
-```javascript
-// Through the IoT coordinator agent:
-"Subscribe to sensors/+/temperature with QoS 1 and filter for warehouse location";
-
-// Available subscribe actions:
-// - subscribe: Subscribe to topics with wildcards
-// - unsubscribe: Remove subscription
-// - list_subscriptions: Show active subscriptions
-// - pause: Temporarily stop processing messages
-// - resume: Resume processing messages
-
-// The agent handles the tool execution internally
-```
-
-### Publish Commands
-
-```javascript
-// Through the IoT coordinator agent:
-"Publish a restart command to device123";
-
-// Available publish actions:
-// - publish: Send single message
-// - publish_batch: Send multiple messages
-// - publish_retained: Publish with retain flag
-// - clear_retained: Clear retained message
-```
-
-### Execute Monitoring Workflow
-
-```javascript
-// The monitoring workflow runs automatically when ENABLE_SCHEDULING=true
-// Schedule:
-// - Routine: every 30 minutes - Agent checks MQTT status and analyzes messages
-// - Connectivity: every hour - Agent tests broker connection
-// - Data quality: every 2 hours - Agent analyzes data patterns
-// - Daily summary: 8 AM daily - Agent generates executive report
-
-// How it works:
-// 1. Cron job triggers the monitoring task
-// 2. System calls the IoT Coordinator Agent with specific prompts
-// 3. Agent uses its tools (mqtt-connection, iot-data-store, etc.) to gather data
-// 4. Agent generates a response with real monitoring insights
-// 5. System logs the results with health scores and metrics
-```
-
-## Common Patterns
-
-### Device Telemetry Collection
-
-```javascript
-// Use the IoT coordinator agent to manage subscriptions:
-
-// Example 1: Subscribe to all device telemetry
-"Subscribe to devices/+/telemetry with QoS 1";
-
-// Example 2: Subscribe with filtering
-"Subscribe to sensors/# and filter for warehouse location with active status";
-
-// The agent will handle wildcard patterns:
-// + matches any single level
-// # matches multiple levels
-```
-
-### Message Filtering and Monitoring
-
-```javascript
-// Through the IoT coordinator agent:
-
-// Subscribe with filtering for critical alerts
-"Subscribe to alerts/# with QoS 2 and filter for critical severity that are not acknowledged";
-
-// Pause subscription for maintenance
-"Pause the subscription to sensors/+/temperature";
-
-// List active subscriptions
-"List all active MQTT subscriptions";
-// Returns: topic, qos, paused status, and filter info
-
-// Resume after maintenance
-"Resume the subscription to sensors/+/temperature";
-```
-
-### Health Monitoring & Reporting
-
-```javascript
-// Interact with IOTOR through the Mastra playground:
-
-// Check system health
-"Check MQTT connection status and analyze system health";
-
-// Generate reports
-"Generate an executive summary report for the last 24 hours";
-
-// Available report types:
-// - executive_summary: High-level overview
-// - technical_analysis: Detailed technical report
-// - anomaly_report: Focus on anomalies
-// - compliance_audit: Compliance documentation
-// - performance_metrics: Performance analysis
-```
-
-### Voice Response System
-
-```javascript
-// Through the IoT coordinator agent:
-
-// Analyze device data and generate witty response
-"Analyze the latest data from device123 and generate a sassy voice response";
-
-// Test different character personalities
-"Generate a Rick and Morty voice response for high temperature conditions";
-"Create a Batman voice message for security breach warning";
-"Generate an Oprah response for system recovery";
-"Create a Winnie the Pooh message for low battery";
-
-// The agent will:
-// 1. Analyze device conditions (temperature, humidity, battery, etc.)
-// 2. Determine severity level (normal, warning, critical, emergency)
-// 3. Use OpenAI GPT-4 Mini to generate character-specific message
-// 4. Convert message to audio using OpenAI TTS (onyx voice)
-// 5. Publish voice response to devices/{device_id}/voice topic
-
-// Voice responses are published to MQTT topics like:
-// devices/sensor123/voice
-// Payload structure:
-// {
-//   metadata: { transcript, severity, personality, audio_format, duration },
-//   audio_data: "base64-encoded-audio-bytes" // Mock binary audio data for demo
-// }
-//
-// Note: Requires OPENAI_API_KEY for both:
-// - GPT-4 Mini: Generates character-specific messages
-// - TTS API: Converts messages to MP3 audio
-// Falls back to predefined messages and mock audio if API key not set
-```
-
-## Supported MQTT Brokers
-
-### Cloud Brokers
-
-- HiveMQ Cloud
-- AWS IoT Core
-- Azure IoT Hub
-- Google Cloud IoT Core
-
-### Self-Hosted
-
-- Eclipse Mosquitto
-- EMQX
-- VerneMQ
-- RabbitMQ (with MQTT plugin)
-
-## Development
-
-### Project Structure
-
-```
-src/mastra/
-├── index.ts                    # Main Mastra configuration
-├── tools/
-│   ├── mqtt-connection.ts      # MQTT broker connection management
-│   ├── mqtt-subscribe.ts       # Topic subscription with filtering
-│   ├── mqtt-publish.ts         # Message publishing with QoS
-│   ├── iot-data-store.ts       # In-memory IoT message storage
-│   ├── iot-report-generator.ts # Automated IoT reporting system
-│   └── iot-voice-response.ts   # AI-powered voice responses with OpenAI TTS
-├── workflows/
-│   └── scheduled-monitoring.ts # IoT monitoring workflow with scheduling
-└── agents/
-    └── iot-coordinator.ts      # IOTOR - Friendly AI coordinator with personality
-```
-
-### Running Tests
-
-```bash
-# Note: test:mqtt is a placeholder script
-# To test MQTT, start the dev server and use the playground:
-pnpm dev
-
-# Type checking
-pnpm type-check
-
-# Run all checks
-pnpm test && pnpm type-check
-```
-
-### Testing Your Setup
-
-1. **Start the Development Server:**
+### Step 2: Launch Mastra Playground
 
 ```bash
 pnpm dev
+# Open http://localhost:3000 in your browser
 ```
 
-2. **Access Mastra Playground:**
-   Open http://localhost:4112 in your browser
+### Step 3: Test MQTT Integration
 
-3. **Test with the IoT Coordinator Agent:**
-   In the playground, interact with IOTOR:
+1. **Connect to Broker**: Use the playground UI to establish MQTT connection
+2. **Subscribe to Topics**: Set up subscriptions like `sensors/+/data`
+3. **Send Test Messages**: Use your MQTT client to publish test data
+4. **Watch AI Response**: See the agent process and respond to MQTT messages
 
-   - "Connect to MQTT broker"
-   - "Check connection status"
-   - "Subscribe to test/+/data"
-   - "Publish a test message to test/device1/data"
-   - "List all active subscriptions"
-   - "Analyze device data and generate a sassy voice response"
-   - "Test voice response with different personalities"
+### Step 4: Extend with Your Use Case
 
-4. **Monitor Scheduled Tasks:**
-   When ENABLE_SCHEDULING=true, automated monitoring runs:
+1. **Create Custom Tools**: Build tools specific to your IoT devices
+2. **Define Agent Logic**: Customize agent instructions for your domain
+3. **Add Workflows**: Implement scheduled tasks and batch processing
+4. **Scale Up**: Deploy to production with environment-specific configs
 
-   - Routine monitoring: Every 30 minutes
-   - Connectivity check: Every hour
-   - Data quality check: Every 2 hours
-   - Daily summary: 8 AM daily
+## MQTT Message Examples
 
-   Check the console logs for monitoring execution and health scores.
-
-## Production Deployment
-
-### Docker
-
-```bash
-docker build -t mastra-iot .
-docker run -p 3000:3000 --env-file .env mastra-iot
+### Generic IoT Sensor Data
+```json
+// Topic: sensors/{device-id}/telemetry
+{
+  "device_id": "sensor-001",
+  "type": "temperature",
+  "value": 72.5,
+  "unit": "fahrenheit",
+  "timestamp": "2024-01-15T10:00:00Z"
+}
 ```
 
-### Environment Variables for Production
+### Command Messages
+```json
+// Topic: devices/{device-id}/commands
+{
+  "command": "activate",
+  "target": "cooling-system",
+  "parameters": {
+    "intensity": 75,
+    "duration": 3600
+  }
+}
+```
 
-- Use secure credential storage
-- Enable TLS/SSL connections
-- Configure appropriate retention policies
-- Set up monitoring and alerting
+### Status Updates
+```json
+// Topic: devices/{device-id}/status
+{
+  "device_id": "actuator-001",
+  "status": "online",
+  "battery": 85,
+  "last_action": "cooling_activated"
+}
+```
 
-## Security Best Practices
+## Resources & Documentation
 
-1. **Authentication**
+### Framework & Tools
 
-   - Use strong passwords or certificates
-   - Rotate credentials regularly
-   - Store secrets securely
+- **[Mastra AI Framework](https://mastra.ai/docs)** - Core framework for building AI agents and workflows
 
-2. **Encryption**
+  - [Getting Started Guide](https://mastra.ai/docs/quickstart)
+  - [Agent Development](https://mastra.ai/docs/agents)
+  - [Tool Creation](https://mastra.ai/docs/tools)
+  - [Memory & Persistence](https://mastra.ai/docs/memory)
 
-   - Always use TLS/SSL (wss://, mqtts://)
-   - Validate server certificates
-   - Encrypt sensitive message payloads
+- **[HiveMQ Cloud](https://www.hivemq.com/docs/)** - MQTT broker for IoT communication
 
-3. **Access Control**
-   - Implement topic-level ACLs
-   - Use least privilege principle
-   - Audit all operations
+  - [MQTT Essentials](https://www.hivemq.com/mqtt-essentials/)
+  - [Cloud Setup Guide](https://www.hivemq.com/docs/hivemq-cloud/introduction.html)
 
-## Troubleshooting
+- **[OpenAI API](https://platform.openai.com/docs)** - AI models for agent intelligence
+  - [GPT-4 Models](https://platform.openai.com/docs/models/gpt-4)
+  - [Text-to-Speech](https://platform.openai.com/docs/guides/text-to-speech)
 
-### Connection Issues
+### IoT & MQTT Resources
 
-- Check broker URL format and port
-- Verify credentials
-- Ensure network connectivity
-- Check firewall rules
-
-### Message Processing
-
-- Monitor processor statistics
-- Check error logs
-- Verify topic patterns
-- Validate message formats
-
-### Performance
-
-- Adjust batch sizes
-- Configure retention policies
-- Monitor memory usage
-- Optimize message processing
+- **[MQTT Protocol](https://mqtt.org/)** - Lightweight messaging protocol for IoT
+- **[Node.js MQTT Client](https://github.com/mqttjs/MQTT.js)** - JavaScript client library
 
 ## Contributing
 
-1. Fork the repository
-2. Create a feature branch
-3. Make your changes
-4. Add tests
-5. Submit a pull request
+Contributions are welcome! Please feel free to submit pull requests or open issues for bugs, feature requests, or improvements.
+
+By contributing to this project, you agree that your contributions will be licensed under the MIT License alongside the original project. Contributors retain copyright to their contributions and are added to the list of contributors.
 
 ## License
 
-This template is provided under the MIT License. See LICENSE file for details.
+This project is licensed under the MIT License - see below for details:
 
-## Recent Enhancements
+```
+MIT License
 
-### 🎭 Character-Driven Voice Responses
+Copyright (c) 2024 Bruce Canedy and contributors
 
-- **Dynamic personality generation** using GPT-4 Mini for unique responses every time
-- **Four iconic characters**: Rick Sanchez (_burp_), Batman (dark & brooding), Oprah (inspirational), Winnie the Pooh (honey-obsessed)
-- **Dual AI system**: LLM for text generation + TTS for voice synthesis
-- **Anti-spam protection**: Prevents message flooding with smart timing restrictions
+Permission is hereby granted, free of charge, to any person obtaining a copy
+of this software and associated documentation files (the "Software"), to deal
+in the Software without restriction, including without limitation the rights
+to use, copy, modify, merge, publish, distribute, sublicense, and/or sell
+copies of the Software, and to permit persons to whom the Software is
+furnished to do so, subject to the following conditions:
 
-### 🔧 Production-Ready Monitoring
+The above copyright notice and this permission notice shall be included in all
+copies or substantial portions of the Software.
 
-- **Agent-based execution**: Uses `mastra.getAgent()` and `agent.generate()` per official API
-- **Real tool integration**: Agent uses mqtt-connection, iot-data-store for actual monitoring
-- **Non-blocking cron jobs**: Prevents system freezes with proper async handling
-- **Graceful fallbacks**: Mock data when services unavailable
+THE SOFTWARE IS PROVIDED "AS IS", WITHOUT WARRANTY OF ANY KIND, EXPRESS OR
+IMPLIED, INCLUDING BUT NOT LIMITED TO THE WARRANTIES OF MERCHANTABILITY,
+FITNESS FOR A PARTICULAR PURPOSE AND NONINFRINGEMENT. IN NO EVENT SHALL THE
+AUTHORS OR COPYRIGHT HOLDERS BE LIABLE FOR ANY CLAIM, DAMAGES OR OTHER
+LIABILITY, WHETHER IN AN ACTION OF CONTRACT, TORT OR OTHERWISE, ARISING FROM,
+OUT OF OR IN CONNECTION WITH THE SOFTWARE OR THE USE OR OTHER DEALINGS IN THE
+SOFTWARE.
+```
 
-### 🛠️ Technical Improvements
+### Attribution
 
-- **Concurrency locks**: Prevents duplicate voice generation for same device
-- **Optimized logging**: Reduced verbosity while maintaining debugging capability
-- **Fixed workflow execution**: Bypassed browser-specific APIs for Node.js compatibility
-- **Enhanced error handling**: Try-finally blocks ensure resource cleanup
+When using this project, please provide attribution by:
 
-## Support
+1. Including the copyright notice in your project
+2. Linking back to this repository
+3. Mentioning the use of the Mastra framework and HiveMQ for MQTT connectivity
 
-- Documentation: [Mastra Docs](https://docs.mastra.ai)
+## Use Cases & Applications
+
+This MQTT-Mastra integration template can be adapted for:
+
+### 🏭 Industrial IoT
+- Equipment monitoring and predictive maintenance
+- Production line optimization
+- Quality control systems
+
+### 🏠 Smart Home/Building
+- Environmental control systems
+- Security and access management
+- Energy optimization
+
+### 🌾 Agriculture
+- Greenhouse automation
+- Irrigation control
+- Livestock monitoring
+
+### 🏥 Healthcare
+- Patient monitoring systems
+- Medical equipment management
+- Environmental compliance
+
+### 🚗 Transportation
+- Fleet management
+- Vehicle telemetry
+- Route optimization
+
+## Project Structure
+
+```
+src/mastra/
+├── index.ts                    # Mastra instance configuration
+├── agents/
+│   └── chicken-coop-agent.ts   # Example IoT agent implementation
+└── tools/
+    ├── mqtt/                    # Core MQTT Integration Tools
+    │   ├── mqtt-connection.ts   # Broker connection with auto-reconnect
+    │   ├── mqtt-subscribe.ts    # Topic subscription management
+    │   ├── mqtt-publish.ts      # Message publishing with QoS
+    │   └── mqtt-memory-bridge.ts # Automatic MQTT→Memory sync
+    ├── utils/                   # Reusable Utility Tools
+    │   ├── shared-memory-tool.ts # Cross-tool data sharing
+    │   ├── approval-request.ts  # Human-in-the-loop workflows
+    │   └── log-event.ts         # Structured event logging
+    └── chicken-coop/            # Example Domain-Specific Tools
+        ├── coop-temp-alert.ts   # Temperature monitoring
+        ├── feed-schedule.ts     # Schedule management
+        ├── feeder-control.ts    # Device control via MQTT
+        └── coop-controls.ts     # Environmental systems
+```
+
+## Building Your Own IoT Integration
+
+### 1. Define Your MQTT Topics
+```javascript
+const topics = [
+  'sensors/+/temperature',  // Wildcard for all temperature sensors
+  'devices/+/status',       // Device status updates
+  'commands/+/execute'      // Command execution
+];
+```
+
+### 2. Create Domain-Specific Tools
+```javascript
+export const myCustomTool = createTool({
+  id: 'my-custom-tool',
+  description: 'Process IoT data for my use case',
+  inputSchema: z.object({
+    deviceId: z.string(),
+    action: z.string()
+  }),
+  execute: async ({ deviceId, action }) => {
+    // Your custom logic here
+  }
+});
+```
+
+### 3. Configure Your Agent
+```javascript
+const myAgent = new Agent({
+  name: 'My IoT Assistant',
+  instructions: 'Monitor and control my IoT devices...',
+  tools: {
+    mqttConnect: mqttConnectionTool,
+    mqttSubscribe: mqttSubscribeTool,
+    myCustomTool: myCustomTool
+  }
+});
+```

@@ -1,7 +1,8 @@
-import { createTool } from '@mastra/core/tools';
-import { z } from 'zod';
-import { getMqttClient } from './mqtt-connection.js';
-import { storeMessage } from './iot-data-store.js';
+import { createTool } from "@mastra/core/tools";
+import { z } from "zod";
+import { getMqttClient } from "./mqtt-connection.js";
+import { addSensorData } from "../utils/shared-memory-tool.js";
+// import { storeMessage } from './iot-data-store.js';
 
 interface Subscription {
   topic: string;
@@ -13,20 +14,35 @@ interface Subscription {
 const subscriptions = new Map<string, Subscription>();
 
 const subscriptionConfigSchema = z.object({
-  topics: z.union([z.string(), z.array(z.string())]).describe('Topic(s) to subscribe to'),
-  qos: z.enum(['0', '1', '2']).optional().default('1').describe('QoS level for subscription'),
-  filter: z.record(z.any()).optional().describe('Message filtering criteria'),
+  topics: z
+    .union([z.string(), z.array(z.string())])
+    .describe("Topic(s) to subscribe to"),
+  qos: z
+    .enum(["0", "1", "2"])
+    .optional()
+    .default("1")
+    .describe("QoS level for subscription"),
+  filter: z.record(z.any()).optional().describe("Message filtering criteria"),
 });
 
-const actionSchema = z.enum(['subscribe', 'unsubscribe', 'list_subscriptions', 'pause', 'resume']);
+const actionSchema = z.enum([
+  "subscribe",
+  "unsubscribe",
+  "list_subscriptions",
+  "pause",
+  "resume",
+]);
 
 export const mqttSubscribeTool = createTool({
-  id: 'mqtt-subscribe',
-  description: 'Subscribe to MQTT topics and manage subscriptions',
+  id: "mqtt-subscribe",
+  description: "Subscribe to MQTT topics and manage subscriptions",
   inputSchema: z.object({
     action: actionSchema,
     config: subscriptionConfigSchema.optional(),
-    topic: z.string().optional().describe('Topic for unsubscribe/pause/resume actions'),
+    topic: z
+      .string()
+      .optional()
+      .describe("Topic for unsubscribe/pause/resume actions"),
   }),
   outputSchema: z.object({
     success: z.boolean(),
@@ -40,20 +56,22 @@ export const mqttSubscribeTool = createTool({
     if (!client || !client.connected) {
       return {
         success: false,
-        status: 'MQTT client not connected',
+        status: "MQTT client not connected",
       };
     }
 
     switch (action) {
-      case 'subscribe':
+      case "subscribe":
         if (!config) {
           return {
             success: false,
-            status: 'Configuration required for subscribe action',
+            status: "Configuration required for subscribe action",
           };
         }
 
-        const topics = Array.isArray(config.topics) ? config.topics : [config.topics];
+        const topics = Array.isArray(config.topics)
+          ? config.topics
+          : [config.topics];
         const qos = parseInt(config.qos) as 0 | 1 | 2;
         const subscribed: string[] = [];
         const failed: string[] = [];
@@ -73,17 +91,20 @@ export const mqttSubscribeTool = createTool({
                   filter: config.filter,
                   paused: false,
                 });
-                
+
                 // Log filter setup for debugging
                 if (config.filter) {
-                  console.log(`[MQTT] Filter applied to ${topicStr}:`, config.filter);
+                  console.log(
+                    `[MQTT] Filter applied to ${topicStr}:`,
+                    config.filter
+                  );
                 }
               }
 
               remaining--;
               if (remaining === 0) {
-                if (!client.listenerCount('message')) {
-                  client.on('message', handleMessage);
+                if (!client.listenerCount("message")) {
+                  client.on("message", handleMessage);
                 }
 
                 resolve({
@@ -100,11 +121,11 @@ export const mqttSubscribeTool = createTool({
           });
         });
 
-      case 'unsubscribe':
+      case "unsubscribe":
         if (!topic) {
           return {
             success: false,
-            status: 'Topic required for unsubscribe action',
+            status: "Topic required for unsubscribe action",
           };
         }
 
@@ -128,13 +149,15 @@ export const mqttSubscribeTool = createTool({
           });
         });
 
-      case 'list_subscriptions':
-        const subs = Array.from(subscriptions.entries()).map(([topic, sub]) => ({
-          topic,
-          qos: sub.qos,
-          paused: sub.paused,
-          has_filter: !!sub.filter,
-        }));
+      case "list_subscriptions":
+        const subs = Array.from(subscriptions.entries()).map(
+          ([topic, sub]) => ({
+            topic,
+            qos: sub.qos,
+            paused: sub.paused,
+            has_filter: !!sub.filter,
+          })
+        );
 
         return {
           success: true,
@@ -144,11 +167,11 @@ export const mqttSubscribeTool = createTool({
           },
         };
 
-      case 'pause':
+      case "pause":
         if (!topic) {
           return {
             success: false,
-            status: 'Topic required for pause action',
+            status: "Topic required for pause action",
           };
         }
 
@@ -156,7 +179,7 @@ export const mqttSubscribeTool = createTool({
         if (!pauseSub) {
           return {
             success: false,
-            status: 'Subscription not found',
+            status: "Subscription not found",
           };
         }
 
@@ -166,11 +189,11 @@ export const mqttSubscribeTool = createTool({
           status: `Paused subscription to ${topic}`,
         };
 
-      case 'resume':
+      case "resume":
         if (!topic) {
           return {
             success: false,
-            status: 'Topic required for resume action',
+            status: "Topic required for resume action",
           };
         }
 
@@ -178,7 +201,7 @@ export const mqttSubscribeTool = createTool({
         if (!resumeSub) {
           return {
             success: false,
-            status: 'Subscription not found',
+            status: "Subscription not found",
           };
         }
 
@@ -191,7 +214,7 @@ export const mqttSubscribeTool = createTool({
       default:
         return {
           success: false,
-          status: 'Invalid action',
+          status: "Invalid action",
         };
     }
   },
@@ -216,35 +239,31 @@ function handleMessage(topic: string, message: Buffer) {
       }
 
       // Apply filter if present
-      if (subscription.filter && typeof parsedMessage === 'object') {
+      if (subscription.filter && typeof parsedMessage === "object") {
         const filterMatches = Object.entries(subscription.filter).every(
           ([key, value]) => parsedMessage[key] === value
         );
         if (!filterMatches) {
           // Log filtered messages for debugging
-          console.log(`[MQTT] Filtered out message on ${topic} (didn't match filter):`, {
-            message: parsedMessage,
-            filter: subscription.filter,
-            reason: 'Filter criteria not met'
-          });
+          console.log(
+            `[MQTT] Filtered out message on ${topic} (didn't match filter):`,
+            {
+              message: parsedMessage,
+              filter: subscription.filter,
+              reason: "Filter criteria not met",
+            }
+          );
           return;
         }
       }
 
       // Log the message
       console.log(`[MQTT] Received on ${topic}:`, parsedMessage);
-      
-      // Store message data using IoT data store (non-blocking)
-      const deviceId = extractDeviceId(topic);
-      const messageType = determineMessageType(topic, parsedMessage);
-      
-      // Store data in background without blocking message processing
-      const stored = storeMessage(deviceId, topic, parsedMessage, messageType);
-      if (stored) {
-        console.log(`[MQTT] ✅ Stored ${messageType} message from ${deviceId}`);
-      } else {
-        console.warn(`[MQTT] ⚠️ Failed to store message from ${deviceId}`);
-      }
+
+      // Store in shared memory for agent access
+      const analysis = `Received ${determineMessageType(topic, parsedMessage)} message from ${extractDeviceId(topic)}`;
+      addSensorData(topic, parsedMessage, analysis);
+      console.log(`💾 Stored in shared memory: ${topic}`);
     } catch (error) {
       console.error(`[MQTT] Error processing message on ${topic}:`, error);
     }
@@ -252,12 +271,12 @@ function handleMessage(topic: string, message: Buffer) {
 }
 
 function topicMatches(actualTopic: string, subscriptionTopic: string): boolean {
-  const actualParts = actualTopic.split('/');
-  const subParts = subscriptionTopic.split('/');
+  const actualParts = actualTopic.split("/");
+  const subParts = subscriptionTopic.split("/");
 
   for (let i = 0; i < subParts.length; i++) {
-    if (subParts[i] === '#') return true;
-    if (subParts[i] === '+') continue;
+    if (subParts[i] === "#") return true;
+    if (subParts[i] === "+") continue;
     if (i >= actualParts.length || subParts[i] !== actualParts[i]) return false;
   }
 
@@ -268,19 +287,19 @@ function topicMatches(actualTopic: string, subscriptionTopic: string): boolean {
  * Extract device ID from MQTT topic using common IoT topic patterns
  */
 function extractDeviceId(topic: string): string {
-  const parts = topic.split('/');
-  
+  const parts = topic.split("/");
+
   // Common patterns:
   // devices/{device_id}/telemetry -> devices[1]
-  // sensors/{location}/{device_id} -> sensors[2] 
+  // sensors/{location}/{device_id} -> sensors[2]
   // {device_id}/data -> parts[0]
   // home/{room}/{device_type}/{device_id} -> parts[3]
-  
-  if (parts[0] === 'devices' && parts.length >= 2) {
+
+  if (parts[0] === "devices" && parts.length >= 2) {
     return parts[1];
-  } else if (parts[0] === 'sensors' && parts.length >= 3) {
+  } else if (parts[0] === "sensors" && parts.length >= 3) {
     return parts[2];
-  } else if (parts[0] === 'home' && parts.length >= 4) {
+  } else if (parts[0] === "home" && parts.length >= 4) {
     return parts[3];
   } else if (parts.length >= 2) {
     // Try to find a part that looks like a device ID (contains letters and numbers)
@@ -290,41 +309,65 @@ function extractDeviceId(topic: string): string {
       }
     }
   }
-  
+
   // Fallback: use first part or generate from topic
-  return parts[0] || `device_${topic.replace(/[^a-zA-Z0-9]/g, '_')}`;
+  return parts[0] || `device_${topic.replace(/[^a-zA-Z0-9]/g, "_")}`;
 }
 
 /**
  * Determine message type based on topic and content
  */
-function determineMessageType(topic: string, message: any): 'telemetry' | 'status' | 'command' | 'alert' | 'other' {
+function determineMessageType(
+  topic: string,
+  message: any
+): "telemetry" | "status" | "command" | "alert" | "other" {
   const lowerTopic = topic.toLowerCase();
-  
+
   // Check topic patterns
-  if (lowerTopic.includes('telemetry') || lowerTopic.includes('data') || lowerTopic.includes('sensors')) {
-    return 'telemetry';
-  } else if (lowerTopic.includes('status') || lowerTopic.includes('state')) {
-    return 'status';
-  } else if (lowerTopic.includes('command') || lowerTopic.includes('control')) {
-    return 'command';
-  } else if (lowerTopic.includes('alert') || lowerTopic.includes('alarm') || lowerTopic.includes('error')) {
-    return 'alert';
+  if (
+    lowerTopic.includes("telemetry") ||
+    lowerTopic.includes("data") ||
+    lowerTopic.includes("sensors")
+  ) {
+    return "telemetry";
+  } else if (lowerTopic.includes("status") || lowerTopic.includes("state")) {
+    return "status";
+  } else if (lowerTopic.includes("command") || lowerTopic.includes("control")) {
+    return "command";
+  } else if (
+    lowerTopic.includes("alert") ||
+    lowerTopic.includes("alarm") ||
+    lowerTopic.includes("error")
+  ) {
+    return "alert";
   }
-  
+
   // Check message content
-  if (typeof message === 'object' && message) {
-    if (message.temperature || message.humidity || message.pressure || message.sensor_data) {
-      return 'telemetry';
-    } else if (message.status || message.state || message.online !== undefined) {
-      return 'status';
+  if (typeof message === "object" && message) {
+    if (
+      message.temperature ||
+      message.humidity ||
+      message.pressure ||
+      message.sensor_data
+    ) {
+      return "telemetry";
+    } else if (
+      message.status ||
+      message.state ||
+      message.online !== undefined
+    ) {
+      return "status";
     } else if (message.command || message.action || message.control) {
-      return 'command';
-    } else if (message.alert || message.alarm || message.error || message.severity) {
-      return 'alert';
+      return "command";
+    } else if (
+      message.alert ||
+      message.alarm ||
+      message.error ||
+      message.severity
+    ) {
+      return "alert";
     }
   }
-  
-  return 'other';
-}
 
+  return "other";
+}
